@@ -1,0 +1,7 @@
+---
+
+akamai_open_token :
+  client_secret : "XXXXX"
+  host : "XXXXX"
+  access_token : "XXXXX"
+  client_token : "XXXXX"
