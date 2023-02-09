@@ -30,4 +30,4 @@ if __name__ == '__main__':
 
     # Start connector
     connector = Connector(config)
-    connector.run()
+    connector.run() # TODO: call this on a timer

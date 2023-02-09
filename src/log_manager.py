@@ -3,6 +3,7 @@ import gzip
 from gzip import GzipFile
 import shutil
 import logging
+
 from akamai.netstorage import Netstorage
 
 from config import Config
@@ -15,7 +16,6 @@ LogManager is responsible for the following
 - Cleaning up old files
 '''
 class LogManager:
-
     def __init__(self, config: Config):
         # TODO: Persist this to file so script is robust
         self.current_file = None
@@ -34,6 +34,9 @@ class LogManager:
 
     def get_next_log(self) -> str:
         next_filename = self._determine_next_log()
+        if not next_filename:
+            return ""
+
         self._download(next_filename)
 
         uncompressed_filename = os.path.splitext(next_filename)[0] + ".txt"
