@@ -1,7 +1,14 @@
 ---
 
-akamai_open_token :
-  client_secret : "XXXXX"
-  host : "XXXXX"
-  access_token : "XXXXX"
-  client_token : "XXXXX"
+akamai :
+  open :
+    client_secret : ""
+    host : ""
+    access_token : ""
+    client_token : ""
+  netstorage : 
+    host : ""
+    upload_account : ""
+    cp_code : ""
+    key : ""
+    use_ssl : false
