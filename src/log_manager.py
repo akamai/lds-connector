@@ -3,10 +3,18 @@ import gzip
 from gzip import GzipFile
 import shutil
 import logging
+import xml.etree.ElementTree as ET
 
 from akamai.netstorage import Netstorage
 
 from config import Config
+
+
+class _LogFile:
+    def __init__(self, filename, size, md5):
+        self.filename = filename,
+        self.size = size
+        self.md5 = md5
 
 '''
 LogManager is responsible for the following
@@ -47,19 +55,40 @@ class LogManager:
         return uncompressed_filename
 
     def _determine_next_log(self) -> str:
-        # TODO
+        log_files = self._list()
+
+        # TODO: Search through and determine next to download
+
         return ""
 
-    def _list(self): 
+    def _list(self) -> list[_LogFile]:
         logging.info('Listing log files from Akamai NetStorage')
 
         (ok, response) = self.netstorage.list('/{0}/'.format(self.config.netstorage_cp_code)) # TODO Choose correct directory
         if not ok or response == None:
             logging.error('Failed listing NetStorage files. %s', response.reason if response != None else "") 
-            return
+            return []
         logging.debug('Finished listing available logs [%s]', response.text)
 
-        # TODO Return list of files
+        root = ET.fromstring(response.text)
+
+        if root.tag != 'list':
+            logging.error("NetStorage list API returned unexpected XML")
+            return []
+
+        log_files = []
+        for child in root:
+            if child.tag != 'file' or child.get('type') != 'file':
+                logging.debug('Skipping unexpected file [%s]', child.attrib)
+                continue
+
+            log_files.append(_LogFile(
+                filename=child.get('name'),
+                size=child.get('size'),
+                md5=child.get('md5')
+            ))
+
+        return log_files
 
     def _download(self, filename) -> None:
         logging.debug('Downloading file [%s]', filename)
