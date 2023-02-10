@@ -1,0 +1,9 @@
+---
+
+akamai :
+  netstorage : 
+    host : "test_ns_host"
+    upload_account : "test_ns_account"
+    cp_code : 123456
+    key : "test_key"
+    use_ssl : true

@@ -4,17 +4,18 @@ from gzip import GzipFile
 import shutil
 import logging
 import xml.etree.ElementTree as ET
+from dataclasses import dataclass
 
+from requests import Response
 from akamai.netstorage import Netstorage
 
 from config import Config
 
-
+@dataclass
 class _LogFile:
-    def __init__(self, filename, size, md5):
-        self.filename = filename,
-        self.size = size
-        self.md5 = md5
+    filename: str
+    size: int
+    md5: str
 
 '''
 LogManager is responsible for the following
@@ -32,10 +33,10 @@ class LogManager:
         self.config = config
 
         self.netstorage = Netstorage(
-            hostname=self.config.netstorage_host,
-            keyname=self.config.netstorage_upload_account,
-            key=self.config.netstorage_key,
-            ssl=self.config.netstorage_use_ssl
+            hostname=self.config.netstorage_config.host,
+            keyname=self.config.netstorage_config.account,
+            key=self.config.netstorage_config.key,
+            ssl=self.config.netstorage_config.use_ssl
         )
 
         pass
@@ -64,12 +65,15 @@ class LogManager:
     def _list(self) -> list[_LogFile]:
         logging.info('Listing log files from Akamai NetStorage')
 
-        (ok, response) = self.netstorage.list('/{0}/'.format(self.config.netstorage_cp_code)) # TODO Choose correct directory
+        (ok, response) = self.netstorage.list('/{0}/'.format(self.config.netstorage_config.cp_code)) # TODO Choose correct directory
         if not ok or response == None:
             logging.error('Failed listing NetStorage files. %s', response.reason if response != None else "") 
             return []
         logging.debug('Finished listing available logs [%s]', response.text)
 
+        return self._parse_list_response(response)
+    
+    def _parse_list_response(self, response: Response) -> list[_LogFile]:
         root = ET.fromstring(response.text)
 
         if root.tag != 'list':
@@ -79,15 +83,20 @@ class LogManager:
         log_files = []
         for child in root:
             if child.tag != 'file' or child.get('type') != 'file':
-                logging.debug('Skipping unexpected file [%s]', child.attrib)
+                logging.debug('Ignoring non-file in NetStorage: %s %s', child.tag, child.attrib)
                 continue
 
-            log_files.append(_LogFile(
-                filename=child.get('name'),
-                size=child.get('size'),
-                md5=child.get('md5')
-            ))
-
+            try:
+                log_files.append(
+                    _LogFile(
+                        filename=child.attrib['name'],
+                        size=int(child.attrib['size']),
+                        md5=child.attrib['md5']
+                    )
+                )
+            except Exception as e:
+                logging.error("NetStorage list API response was unexpected: %s", e)
+             
         return log_files
 
     def _download(self, filename) -> None:

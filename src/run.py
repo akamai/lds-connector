@@ -1,8 +1,8 @@
 import logging
 import argparse
 
+from config import read_yaml_config
 from connector import Connector
-from config import Config
 
 if __name__ == '__main__':
     # Parse command line arguments 
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
 
     # Parse config from YAML file stream
-    config = Config(args.config)
+    config = read_yaml_config(args.config)
     args.config.close()
 
     # Start connector
