@@ -1,11 +1,8 @@
 import logging
 import argparse
-import requests
-from akamai.edgegrid import EdgeGridAuth
-from urllib.parse import urljoin
 
-from config import Config
 from connector import Connector
+from config import Config
 
 if __name__ == '__main__':
     # Parse command line arguments 
@@ -25,6 +22,7 @@ if __name__ == '__main__':
 
     # Set log level
     logging.basicConfig(level=logging.WARNING if args.level == 'DEFAULT' else args.level)
+
 
     # Parse config from YAML file stream
     config = Config(args.config)
