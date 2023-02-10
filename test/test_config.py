@@ -1,12 +1,18 @@
 import unittest
 from os import path
 
-from src.config import read_yaml_config, Config, NetStorageConfig
+from src.config import read_yaml_config, Config, SplunkConfig, NetStorageConfig
 
 class ConfigTest(unittest.TestCase):
 
     def test_read_yaml_config(self):
         expected_config = Config(
+            splunk_config=SplunkConfig(
+                hec_host="127.0.0.1",
+                hec_port=8088,
+                hec_token="test_hec_token",
+                hec_use_ssl=False
+            ),
             netstorage_config=NetStorageConfig(
                 host="test_ns_host",
                 account="test_ns_account",

@@ -1,5 +1,12 @@
 ---
 
+splunk :
+  hec :
+    host : "127.0.0.1"
+    port : 8088
+    token : "test_hec_token"
+    use_ssl : false
+
 akamai :
   netstorage : 
     host : "test_ns_host"
