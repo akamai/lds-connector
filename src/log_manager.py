@@ -1,3 +1,7 @@
+import os
+import gzip
+from gzip import GzipFile
+import shutil
 import logging
 from akamai.netstorage import Netstorage
 
@@ -31,7 +35,9 @@ class LogManager:
     def get_next_log(self) -> str:
         next_filename = self._determine_next_log()
         self._download(next_filename)
-        uncompressed_filename = self._uncompress(next_filename)
+
+        uncompressed_filename = os.path.splitext(next_filename)[0] + ".txt"
+        self._uncompress(next_filename, uncompressed_filename)
 
         # TODO: Delete old files
 
@@ -59,6 +65,12 @@ class LogManager:
 
         logging.debug('Finished downloading file [%s]', filename)
 
-    def _uncompress(self, compressed_filename) -> str:
-        # TODO
-        return ""
+    def _uncompress(self, compressed_filename, uncompressed_filename) -> None:
+        logging.debug('Uncompressing file [%s] to [%s]', compressed_filename, uncompressed_filename)
+
+        with gzip.open(compressed_filename, 'rb') as compressed_file:
+            assert isinstance(compressed_file, GzipFile)
+            with open(uncompressed_filename, 'wb') as uncompressed_file:
+                shutil.copyfileobj(compressed_file, uncompressed_file)
+
+        logging.debug('Finished uncompressing file [%s] into [%s]', compressed_filename, uncompressed_filename)
