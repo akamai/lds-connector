@@ -72,7 +72,9 @@ class LogManager:
 
         self._uncompress(next_log_file)
 
-        # TODO: Delete GZ
+        self._delete_gzip(next_log_file)
+
+        self.current_log_file = next_log_file
 
         return next_log_file
 
@@ -122,7 +124,7 @@ class LogManager:
             return []
         logging.debug('Finished listing available logs [%s]', response.text)
 
-        return LogManager._parse_list_response(response)
+        return LogManager._parse_list_response(response.text)
     
     def _download(self, log_file: _LogFile) -> None:
         logging.debug('Downloading file [%s]', log_file.filename_gz)
@@ -146,12 +148,15 @@ class LogManager:
         log_file.local_path_txt = local_path_txt
         logging.debug('Finished uncompressing file [%s] into [%s]', log_file.local_path_gz, local_path_txt)
 
+    def _delete_gzip(self, log_file: _LogFile) -> None:
+        os.remove(log_file.local_path_gz)
+
     @staticmethod
-    def _parse_list_response(response: Response) -> list[_LogFile]:
-        root = ET.fromstring(response.text)
+    def _parse_list_response(response_xml: str) -> list[_LogFile]:
+        root = ET.fromstring(response_xml)
 
         if root.tag != 'list':
-            logging.error("NetStorage list API returned unexpected XML")
+            logging.error("NetStorage list API returned unexpected XML: %s", response_xml)
             return []
 
         log_files = []
@@ -162,7 +167,7 @@ class LogManager:
 
             try:
                 file_path = child.attrib['name']
-                filename = file_path[file_path.rfind('/'):]
+                filename = file_path[file_path.rfind('/') + 1:]
                 name_props = LogManager._parse_log_name(filename)
                 
                 log_files.append(
@@ -176,8 +181,8 @@ class LogManager:
                         local_path_txt=''
                     )
                 )
-            except Exception as e:
-                logging.error("NetStorage list API response was unexpected: %s", e)
+            except KeyError as e:
+                logging.error("NetStorage list API file was missing key [%s]: %s", e, child.attrib)
              
         return log_files
 
@@ -185,7 +190,7 @@ class LogManager:
     def _parse_log_name(filename: str) -> _LogNameProps:
         # TODO: This is not robust to every log format. See https://techdocs.akamai.com/log-delivery/docs/file-names
 
-        parse_result = parse.parse('{ident}_{cp_code:d}.{format}_{sort:l}.{start}-{end}-{part}.{encoding}', filename)
+        parse_result = parse.parse('{ident}_{cp_code:d}.{format}_{sort:l}.{start}-{end}-{part:d}.{encoding}', filename)
         if not isinstance(parse_result, parse.Result):
             error_message = 'Failed parsing log file name [{}]'.format(filename)
             logging.error(error_message)
