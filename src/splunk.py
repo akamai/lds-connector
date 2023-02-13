@@ -4,7 +4,7 @@ import parse
 from urllib.parse import urljoin
 import requests
 
-from config import Config
+from src.config import Config
 
 class Splunk:
     _PARSE_FORMAT_STRING = '{} - {} {timestamp},{}'

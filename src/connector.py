@@ -1,8 +1,8 @@
 import logging
 
-from config import Config
-from log_manager import LogManager
-from splunk import Splunk
+from src.config import Config
+from src.log_manager import LogManager
+from src.splunk import Splunk
 
 class Connector:
     def __init__(self, config: Config):

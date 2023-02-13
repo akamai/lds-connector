@@ -1,8 +1,8 @@
 import logging
 import argparse
 
-from config import read_yaml_config
-from connector import Connector
+from src.config import read_yaml_config
+from src.connector import Connector
 
 if __name__ == '__main__':
     # Parse command line arguments 
