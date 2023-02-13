@@ -14,3 +14,7 @@ akamai :
     cp_code : 123456
     key : "test_key"
     use_ssl : true
+    log_dir : 'logs1'
+
+connector :
+  log_download_dir : 'logs2'

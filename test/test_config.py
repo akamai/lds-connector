@@ -18,8 +18,10 @@ class ConfigTest(unittest.TestCase):
                 account="test_ns_account",
                 cp_code=123456,
                 key="test_key",
-                use_ssl=True
-            )
+                use_ssl=True,
+                log_dir='logs1'
+            ),
+            log_download_dir=path.abspath('logs2')
         )
 
         basepath = path.dirname(__file__)

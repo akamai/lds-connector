@@ -26,11 +26,13 @@ class _LogNameProps:
 
 @dataclass
 class _LogFile:
-    filename: str
+    ns_path_gz: str 
+    filename_gz: str
     size: int
     md5: str
-    uncompressed_filename: str
     name_props: _LogNameProps
+    local_path_gz: str
+    local_path_txt: str
 
 '''
 LogManager is responsible for the following
@@ -68,9 +70,7 @@ class LogManager:
 
         self._download(next_log_file)
 
-        uncompressed_filename = os.path.splitext(next_log_file.filename)[0] + ".txt"
-        self._uncompress(next_log_file.filename, uncompressed_filename)
-        next_log_file.uncompressed_filename = uncompressed_filename
+        self._uncompress(next_log_file)
 
         # TODO: Delete GZ
 
@@ -88,7 +88,7 @@ class LogManager:
         # No previously processed log file. Pick first available
         if self.last_log_file == None:
             logging.debug('Did not find previously processed log file. Selecting oldest') 
-            logging.info('Determined next log file: [{}]', ascending_log_files[0].filename)
+            logging.info('Determined next log file: [{}]', ascending_log_files[0].filename_gz)
             return ascending_log_files[0]
 
         logging.debug('Previously processed log file [{}]. Selecting oldest after this')
@@ -101,7 +101,7 @@ class LogManager:
                 # Log file's start time is same as last file's start time. Log file's part is before last file's part. Skip it
                 continue
 
-            logging.info('Determined next log file: [{}]', log_file.filename)
+            logging.info('Determined next log file: [{}]', log_file.filename_gz)
             return log_file
 
         logging.info('No unprocessed log files in NetStorage') 
@@ -110,7 +110,13 @@ class LogManager:
     def _list(self) -> list[_LogFile]:
         logging.info('Listing log files from Akamai NetStorage')
 
-        (ok, response) = self.netstorage.list('/{0}/'.format(self.config.netstorage_config.cp_code)) # TODO Choose correct directory
+        ls_path = LogManager._create_ns_log_path(
+            cp_code=self.config.netstorage_config.cp_code,
+            storage_group=self.config.netstorage_config.account,
+            log_dir=self.config.netstorage_config.log_dir
+        )
+
+        (ok, response) = self.netstorage.list(ls_path)
         if not ok or response == None:
             logging.error('Failed listing NetStorage files. %s', response.reason if response != None else "") 
             return []
@@ -119,21 +125,26 @@ class LogManager:
         return LogManager._parse_list_response(response)
     
     def _download(self, log_file: _LogFile) -> None:
-        logging.debug('Downloading file [%s]', log_file.filename)
+        logging.debug('Downloading file [%s]', log_file.filename_gz)
 
-        # TODO Perform download to configured directory
+        local_path_gz = os.path.join(self.config.log_download_dir, log_file.filename_gz)
+        self.netstorage.download(log_file.ns_path_gz, local_path_gz)
+        log_file.local_path_gz = local_path_gz
 
-        logging.debug('Finished downloading file [%s]', log_file.filename)
+        logging.debug('Finished downloading file [%s]', log_file.filename_gz)
 
-    def _uncompress(self, compressed_filename: str, uncompressed_filename: str) -> None:
-        logging.debug('Uncompressing file [%s] to [%s]', compressed_filename, uncompressed_filename)
+    def _uncompress(self, log_file: _LogFile) -> None:
+        local_path_txt = os.path.splitext(log_file.local_path_gz)[0] + ".txt"
 
-        with gzip.open(compressed_filename, 'rb') as compressed_file:
-            assert isinstance(compressed_file, GzipFile)
-            with open(uncompressed_filename, 'wb') as uncompressed_file:
-                shutil.copyfileobj(compressed_file, uncompressed_file)
+        logging.debug('Uncompressing file [%s] to [%s]', log_file.local_path_gz, local_path_txt)
 
-        logging.debug('Finished uncompressing file [%s] into [%s]', compressed_filename, uncompressed_filename)
+        with gzip.open(log_file.local_path_gz, 'rb') as gz_file:
+            assert isinstance(gz_file, GzipFile)
+            with open(local_path_txt, 'wb') as txt_file:
+                shutil.copyfileobj(gz_file, txt_file)
+
+        log_file.local_path_txt = local_path_txt
+        logging.debug('Finished uncompressing file [%s] into [%s]', log_file.local_path_gz, local_path_txt)
 
     @staticmethod
     def _parse_list_response(response: Response) -> list[_LogFile]:
@@ -150,16 +161,19 @@ class LogManager:
                 continue
 
             try:
-                filename = child.attrib['name']
+                file_path = child.attrib['name']
+                filename = file_path[file_path.rfind('/'):]
                 name_props = LogManager._parse_log_name(filename)
-
+                
                 log_files.append(
                     _LogFile(
-                        filename=filename,
+                        ns_path_gz=file_path,
+                        filename_gz=filename,
                         size=int(child.attrib['size']),
                         md5=child.attrib['md5'],
-                        uncompressed_filename='', # File has not yet been uncompressed,
-                        name_props=name_props
+                        name_props=name_props,
+                        local_path_gz='',
+                        local_path_txt=''
                     )
                 )
             except Exception as e:
@@ -191,3 +205,11 @@ class LogManager:
             part=parse_result['part'],
             encoding=parse_result['encoding']
         )
+
+    @staticmethod
+    def _create_ns_log_path(cp_code: int, storage_group: str, log_dir: str) -> str:
+        # TODO: Consider making the user specify full path in log_dir. Mirror how NetStorage UI presents paths.
+        log_path = '/{0}/{1}/'.format(cp_code, storage_group)
+        if log_dir:
+            log_path = log_path + log_dir + '/'
+        return log_path
