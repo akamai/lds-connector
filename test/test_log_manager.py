@@ -4,11 +4,25 @@ import unittest
 from os import path
 from test import test_data
 from unittest.mock import MagicMock
+import pickle
 
 from src.log_manager import LogManager, _LogFile, _LogNameProps
 
 
 class LogManagerTest(unittest.TestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        if path.isdir(test_data.TEMP_DIR):
+            shutil.rmtree(test_data.TEMP_DIR)
+
+        os.mkdir(test_data.TEMP_DIR)
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+        if path.isdir(test_data.TEMP_DIR):
+            shutil.rmtree(test_data.TEMP_DIR)
 
     def test_create_ns_log_path(self):
         cp_code = 123456
@@ -80,7 +94,9 @@ class LogManagerTest(unittest.TestCase):
                 encoding='gz'
             ),
             local_path_gz='',
-            local_path_txt=''
+            local_path_txt='',
+            processed=False,
+            last_processed_line=-1
         )
 
         log_files = LogManager._parse_list_response(list_response_xml)
@@ -138,51 +154,123 @@ class LogManagerTest(unittest.TestCase):
 
     def test_get_next_log(self):
         config = test_data.create_config()
-        config.log_download_dir = LogManagerTest._create_download_dir()
+        config.log_download_dir = test_data.TEMP_DIR
+        log_manager = LogManager(config)
+
+        log_manager._list = MagicMock(return_value = [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
+        log_manager._download = MagicMock(wraps=LogManagerTest._download_file)
+
+        log_file = log_manager.get_next_log()
+
+        expected_log_file = test_data.get_ns_file1()
+        expected_log_file.local_path_txt = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
+        expected_log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz)
+
+        assert log_file is not None
+        self.assertEqual(log_file, expected_log_file)
+        self.assertTrue(os.path.isfile(expected_log_file.local_path_txt))
+        self.assertFalse(os.path.isfile(expected_log_file.local_path_gz))
+
+    def test_read_resume_data(self):
+        resume_data = test_data.get_ns_file1()
+        resume_data.processed = True
+        resume_data.last_processed_line = 4
+
+        with open(test_data.RESUME_PATH, 'wb') as file:
+            pickle.dump(resume_data, file)
+
+        config = test_data.create_config()
+        config.log_download_dir = test_data.TEMP_DIR
+
+        log_manager = LogManager(config)
+
+        self.assertEqual(log_manager.resume_log_file, resume_data)
+
+    def test_resume_unfinished_log(self):
+        resume_data = test_data.get_ns_file1()
+        resume_data.processed = False
+        resume_data.last_processed_line = 2
+        LogManagerTest._download_file(resume_data)
+        LogManager._uncompress(resume_data)
+        with open(test_data.RESUME_PATH, 'wb') as file:
+            pickle.dump(resume_data, file)
+
+        config = test_data.create_config()
+        config.log_download_dir = test_data.TEMP_DIR
+        log_manager = LogManager(config)
+
+        log_file = log_manager.get_next_log()
+
+        self.assertEqual(log_file, resume_data)
+        self.assertIsNone(log_manager.resume_log_file)
+        self.assertEqual(log_manager.current_log_file, resume_data)
+        self.assertIsNone(log_manager.last_log_file)
+
+    def test_resume_finished_log(self):
+        resume_data = test_data.get_ns_file1()
+        resume_data.processed = True
+        resume_data.last_processed_line = 4
+        with open(test_data.RESUME_PATH, 'wb') as file:
+            pickle.dump(resume_data, file)
+
+        config = test_data.create_config()
+        config.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
         log_manager._download = MagicMock(wraps=LogManagerTest._download_file)
 
         log_file = log_manager.get_next_log()
+
+        expected_log_file = test_data.get_ns_file2()
+        expected_log_file.local_path_txt = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
+        expected_log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz)
+
         assert log_file is not None
+        self.assertEqual(log_file, expected_log_file)
+        self.assertTrue(os.path.isfile(log_file.local_path_txt))
+        self.assertFalse(os.path.isfile(log_file.local_path_gz))
 
-        # Assert text file exists
-        expected_txt_path = os.path.join(test_data.TEMP_DIR, test_data.get_ns_file1().filename_gz.replace('.gz', '.txt'))
-        self.assertEqual(log_file.local_path_txt, expected_txt_path)
-        self.assertTrue(os.path.isfile(expected_txt_path))
+    def test_resume_unfinished_log_missing(self):
+        resume_data = test_data.get_ns_file2()
+        resume_data.processed = False
+        resume_data.last_processed_line = 2
 
-        # Assert Gzip file was deleted
-        expected_gz_path = os.path.join(test_data.TEMP_DIR, test_data.get_ns_file1().filename_gz)
-        self.assertEqual(log_file.local_path_gz, expected_gz_path)
-        self.assertFalse(os.path.isfile(expected_gz_path))
+        with open(test_data.RESUME_PATH, 'wb') as file:
+            pickle.dump(resume_data, file)
 
-        os.remove(expected_txt_path)
-        os.rmdir(config.log_download_dir)
+        config = test_data.create_config()
+        config.log_download_dir = test_data.TEMP_DIR
+        log_manager = LogManager(config)
 
+        log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
+        log_manager._download = MagicMock(wraps=LogManagerTest._download_file)
+
+        log_file = log_manager.get_next_log()
+
+        expected_log_file = test_data.get_ns_file1()
+        expected_log_file.local_path_txt = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
+        expected_log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz)
+
+        assert log_file is not None
+        self.assertEqual(log_file, expected_log_file)
+        self.assertTrue(os.path.isfile(expected_log_file.local_path_txt))
+        self.assertFalse(os.path.isfile(expected_log_file.local_path_gz))
 
     @staticmethod
     def _download_file(log_file: _LogFile):
-        '''
+        """
         Mock method of downloading a file
 
         The desired log file is assumed to exist in data/ directory. 
         It's copied into the tmp/ download directory.
         This allows unit testing the Gzip deletion.
-        '''
+        """
         source_path: str = path.join(test_data.DATA_DIR, log_file.filename_gz)
         dest_path: str = path.join(test_data.TEMP_DIR, log_file.filename_gz)
         shutil.copyfile(source_path, dest_path)
 
         log_file.local_path_gz = dest_path
-
-    @staticmethod
-    def _create_download_dir():
-        if not path.isdir(test_data.TEMP_DIR):
-            os.mkdir(test_data.TEMP_DIR)
-
-        return test_data.TEMP_DIR
-
 
 if __name__ == '__main__':
     unittest.main()

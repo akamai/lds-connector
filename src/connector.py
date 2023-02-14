@@ -1,7 +1,7 @@
 import logging
 
 from src.config import Config
-from src.log_manager import LogManager
+from src.log_manager import LogManager, _LogFile
 from src.splunk import Splunk
 
 
@@ -12,20 +12,33 @@ class Connector:
         self.splunk = Splunk(self.config)
 
     def run(self):
-        log_filename = self.log_manager.get_next_log()
+        log_file = self.log_manager.get_next_log()
 
-        if not log_filename:
+        if log_file is None:
             logging.info('No log files to process')
             return
 
-        while not log_filename:
-            self._process_log_file(log_filename)
-            log_filename = self.log_manager.get_next_log()
+        while log_file is not None:
+            self._process_log_file(log_file)
+            log_file = self.log_manager.get_next_log()
 
-    def _process_log_file(self, filename):
-        # TODO: Track the last successfully processed log line
-        with open(filename, 'r', encoding='utf-8') as log_file:
-            log_line = log_file.readline()
-            while log_line:
-                self.splunk.handle_logline(log_line)
-                log_line = log_file.readline()
+    def _process_log_file(self, log_file: _LogFile):
+        logging.info('Processing log file %s', log_file.local_path_txt)
+        try:
+            with open(log_file.local_path_txt, 'r', encoding='utf-8') as file:
+                log_line = file.readline()
+                line_number = 0
+                while log_line:
+                    self.splunk.handle_logline(log_line)
+                    log_file.last_processed_line = line_number
+
+                    log_line = file.readline()
+                    line_number += 1
+                log_file.processed = True
+        except Exception as exception:
+            logging.error('An unexpected error has occurred processing log lines [%s]. Ignoring and moving on', exception)
+            # TODO: It could be useful to log how many lines were successfully processed?
+        finally:
+            self.log_manager.save_resume_data()
+            logging.info('Processed log file %s. Finished processing: %d. Last line processed: %d', \
+                log_file.local_path_txt, log_file.processed, log_file.last_processed_line)

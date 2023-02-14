@@ -1,6 +1,7 @@
 import gzip
 import logging
 import os
+import pickle
 import shutil
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -34,13 +35,18 @@ class _LogFile:
     name_props: _LogNameProps
     local_path_gz: str
     local_path_txt: str
+    last_processed_line: int
+    processed: bool
 
 
 class LogManager:
+    _RESUME_PICKLE_FILE_NAME = 'resume.pickle'
+
     def __init__(self, config: Config):
         # TODO: Persist this to file so script is robust
         self.current_log_file: Optional[_LogFile] = None
         self.last_log_file: Optional[_LogFile] = None
+        self.resume_log_file: Optional[_LogFile] = None
 
         self.config = config
 
@@ -51,10 +57,44 @@ class LogManager:
             ssl=self.config.netstorage_config.use_ssl
         )
 
+        self.resume_path = os.path.join(config.log_download_dir, LogManager._RESUME_PICKLE_FILE_NAME)
+
+        if os.path.isfile(self.resume_path):
+            with open(self.resume_path, 'rb') as file:
+                self.resume_log_file = pickle.load(file)
+
+    def save_resume_data(self):
+        assert self.current_log_file is not None
+        with open(self.resume_path, 'wb') as file:
+            pickle.dump(self.current_log_file, file)
+
     def get_next_log(self) -> Optional[_LogFile]:
-        # Current file hasn't been completed
-        if self.current_log_file is not None:
-            return self.current_log_file
+        if self.resume_log_file is not None:
+            # First run. Resume log file found
+            if self.resume_log_file.processed:
+                # Resume log file was fully processed. Use it as last
+                self.last_log_file = self.resume_log_file
+                self.current_log_file = None
+                self.resume_log_file = None
+            elif os.path.isfile(self.resume_log_file.local_path_txt):
+                # Resume log file wasn't fully processed. Use it as current
+                self.last_log_file = None
+                self.current_log_file = self.resume_log_file
+                self.resume_log_file = None
+                return self.current_log_file
+            else:
+                # Resume log file wasn't fully processed, but log file not found
+                # TODO: Consider attempting to re-download the missing file
+                logging.error('Resume log file was not found [%s}]. Failed resuming', self.resume_log_file.local_path_txt)
+                self.last_log_file = None
+                self.current_log_file = None
+                self.resume_log_file = None
+        elif self.current_log_file is not None:
+            # Normal run
+            self.save_resume_data()
+            self.last_log_file = self.current_log_file
+            self.current_log_file = None
+
 
         next_log_file = self._determine_next_log()
         if not next_log_file:
@@ -63,7 +103,7 @@ class LogManager:
 
         self._download(next_log_file)
 
-        self._uncompress(next_log_file)
+        LogManager._uncompress(next_log_file)
 
         self._delete_gzip(next_log_file)
 
@@ -130,7 +170,8 @@ class LogManager:
 
         logging.debug('Finished downloading file [%s]', log_file.filename_gz)
 
-    def _uncompress(self, log_file: _LogFile) -> None:
+    @staticmethod
+    def _uncompress(log_file: _LogFile) -> None:
         local_path_txt = os.path.splitext(log_file.local_path_gz)[0] + ".txt"
 
         logging.debug('Uncompressing file [%s] to [%s]', log_file.local_path_gz, local_path_txt)
@@ -143,7 +184,8 @@ class LogManager:
         log_file.local_path_txt = local_path_txt
         logging.debug('Finished uncompressing file [%s] into [%s]', log_file.local_path_gz, local_path_txt)
 
-    def _delete_gzip(self, log_file: _LogFile) -> None:
+    @staticmethod
+    def _delete_gzip(log_file: _LogFile) -> None:
         os.remove(log_file.local_path_gz)
 
     @staticmethod
@@ -173,7 +215,9 @@ class LogManager:
                         md5=child.attrib['md5'],
                         name_props=name_props,
                         local_path_gz='',
-                        local_path_txt=''
+                        local_path_txt='',
+                        last_processed_line=-1,
+                        processed=False
                     )
                 )
             except KeyError as key_error:

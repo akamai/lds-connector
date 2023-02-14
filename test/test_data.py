@@ -2,11 +2,12 @@ import os
 from os import path
 
 from src.config import Config, SplunkConfig, NetStorageConfig
-from src.log_manager import _LogFile, _LogNameProps
+from src.log_manager import _LogFile, _LogNameProps, LogManager
 
 
 DATA_DIR = path.join(path.dirname(__file__), 'data')
 TEMP_DIR = path.join(path.dirname(__file__), 'tmp')
+RESUME_PATH = path.join(TEMP_DIR, LogManager._RESUME_PICKLE_FILE_NAME)
 
 NS_LIST_RESPONSE = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <list>
@@ -52,7 +53,9 @@ def get_ns_file1():
             encoding='gz'
         ),
         local_path_gz='',
-        local_path_txt=''
+        local_path_txt='',
+        processed=False,
+        last_processed_line=-1
     )
 
 
@@ -72,7 +75,9 @@ def get_ns_file2():
             encoding='gz'
         ),
         local_path_gz='',
-        local_path_txt=''
+        local_path_txt='',
+        processed=False,
+        last_processed_line=-1
     )
 
 
@@ -92,5 +97,7 @@ def get_ns_file3():
             encoding='gz'
         ),
         local_path_gz='',
-        local_path_txt=''
+        local_path_txt='',
+        processed=False,
+        last_processed_line=-1
     )

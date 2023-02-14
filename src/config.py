@@ -80,6 +80,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
         return Config(
             splunk_config=splunk_config,
             netstorage_config=ns_config,
+            # TODO: Accept abs or relative path
             log_download_dir=os.path.abspath(connector_config[_KEY_CONNECTOR_LOG_DIR])
         )
     except KeyError as key_error:
