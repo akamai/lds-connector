@@ -1,9 +1,9 @@
 import unittest
 from os import path
+from test import test_data
 
 from src.config import read_yaml_config
 
-from test import test_data
 
 class ConfigTest(unittest.TestCase):
 
@@ -12,11 +12,10 @@ class ConfigTest(unittest.TestCase):
 
         basepath = path.dirname(__file__)
         config_filename = path.join(basepath, 'data', 'test_config.yaml')
-        with open(config_filename, 'r') as config_file:
+        with open(config_filename, 'r', encoding='utf-8') as config_file:
             config = read_yaml_config(config_file)
-
-            print(config)
             self.assertEqual(config, expected_config)
+
 
 if __name__ == '__main__':
     unittest.main()

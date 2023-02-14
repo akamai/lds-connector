@@ -1,7 +1,9 @@
-import yaml
+from dataclasses import dataclass
 import logging
 import os
-from dataclasses import dataclass
+from typing import Optional
+import yaml
+
 
 @dataclass
 class SplunkConfig:
@@ -9,6 +11,7 @@ class SplunkConfig:
     hec_port: int
     hec_token: str
     hec_use_ssl: bool
+
 
 @dataclass
 class NetStorageConfig:
@@ -19,11 +22,13 @@ class NetStorageConfig:
     use_ssl: bool
     log_dir: str
 
+
 @dataclass
 class Config:
     splunk_config: SplunkConfig
     netstorage_config: NetStorageConfig
     log_download_dir: str
+
 
 _KEY_AKAMAI = "akamai"
 _KEY_NS = "netstorage"
@@ -44,9 +49,10 @@ _KEY_SPLUNK_HEC_SSL = "use_ssl"
 _KEY_CONNECTOR = "connector"
 _KEY_CONNECTOR_LOG_DIR = "log_download_dir"
 
-def read_yaml_config(yaml_stream):
+
+def read_yaml_config(yaml_stream) -> Optional[Config]:
     logging.info('Parsing configuration from YAML file')
-    
+
     yaml_config = yaml.safe_load(yaml_stream)
 
     try:
@@ -76,8 +82,7 @@ def read_yaml_config(yaml_stream):
             netstorage_config=ns_config,
             log_download_dir=os.path.abspath(connector_config[_KEY_CONNECTOR_LOG_DIR])
         )
-    except KeyError as keyError:
-        logging.error("Configuration file missing key %s", keyError.args[0])
+    except KeyError as key_error:
+        logging.error("Configuration file missing key %s", key_error.args[0])
         # TODO: Add termination handler to clean-up
-        exit(1)
-
+        return None

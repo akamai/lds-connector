@@ -1,18 +1,18 @@
-import os
 import gzip
-from gzip import GzipFile
-import shutil
 import logging
+import os
+import shutil
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
-from typing import Tuple, Optional
-import parse
 from datetime import datetime, timezone
+from gzip import GzipFile
+from typing import Optional
 
-from requests import Response
+import parse
 from akamai.netstorage import Netstorage
 
 from src.config import Config
+
 
 @dataclass
 class _LogNameProps:
@@ -24,9 +24,10 @@ class _LogNameProps:
     part: int
     encoding: str
 
+
 @dataclass
 class _LogFile:
-    ns_path_gz: str 
+    ns_path_gz: str
     filename_gz: str
     size: int
     md5: str
@@ -34,13 +35,7 @@ class _LogFile:
     local_path_gz: str
     local_path_txt: str
 
-'''
-LogManager is responsible for the following
-- Determining the next log file to download
-- Downloading the log file
-- Uncompressing the log file
-- Cleaning up old files
-'''
+
 class LogManager:
     def __init__(self, config: Config):
         # TODO: Persist this to file so script is robust
@@ -56,11 +51,9 @@ class LogManager:
             ssl=self.config.netstorage_config.use_ssl
         )
 
-        pass
-
     def get_next_log(self) -> Optional[_LogFile]:
         # Current file hasn't been completed
-        if self.current_log_file != None:
+        if self.current_log_file is not None:
             return self.current_log_file
 
         next_log_file = self._determine_next_log()
@@ -88,25 +81,27 @@ class LogManager:
         ascending_log_files = sorted(log_files, key=lambda f: f.name_props.start_time)
 
         # No previously processed log file. Pick first available
-        if self.last_log_file == None:
-            logging.debug('Did not find previously processed log file. Selecting oldest') 
-            logging.info('Determined next log file: [{}]', ascending_log_files[0].filename_gz)
+        if self.last_log_file is None:
+            logging.debug('Did not find previously processed log file. Selecting oldest')
+            logging.info('Determined next log file: [%s]', ascending_log_files[0].filename_gz)
             return ascending_log_files[0]
 
-        logging.debug('Previously processed log file [{}]. Selecting oldest after this')
+        logging.debug('Previously processed log file. Selecting oldest after this')
         for log_file in ascending_log_files:
             if log_file.name_props.start_time < self.last_log_file.name_props.start_time:
                 # Log file's start time is before last file's start time. Skip it
                 continue
 
-            if log_file.name_props.start_time == self.last_log_file.name_props.start_time and log_file.name_props.part <= self.last_log_file.name_props.part:
-                # Log file's start time is same as last file's start time. Log file's part is before last file's part. Skip it
+            if log_file.name_props.start_time == self.last_log_file.name_props.start_time \
+                and log_file.name_props.part <= self.last_log_file.name_props.part:
+                # Log file's start time is same as last file's start time.
+                # Log file's part is before last file's part. Skip it
                 continue
 
-            logging.info('Determined next log file: [{}]', log_file.filename_gz)
+            logging.info('Determined next log file: [{%s}]', log_file.filename_gz)
             return log_file
 
-        logging.info('No unprocessed log files in NetStorage') 
+        logging.info('No unprocessed log files in NetStorage')
         return None
 
     def _list(self) -> list[_LogFile]:
@@ -118,14 +113,14 @@ class LogManager:
             log_dir=self.config.netstorage_config.log_dir
         )
 
-        (ok, response) = self.netstorage.list(ls_path)
-        if not ok or response == None:
-            logging.error('Failed listing NetStorage files. %s', response.reason if response != None else "") 
+        _, response = self.netstorage.list(ls_path)
+        if response is None or response.status_code != 200:
+            logging.error('Failed listing NetStorage files. %s', response.reason if response is not None else "")
             return []
         logging.debug('Finished listing available logs [%s]', response.text)
 
         return LogManager._parse_list_response(response.text)
-    
+
     def _download(self, log_file: _LogFile) -> None:
         logging.debug('Downloading file [%s]', log_file.filename_gz)
 
@@ -169,7 +164,7 @@ class LogManager:
                 file_path = child.attrib['name']
                 filename = file_path[file_path.rfind('/') + 1:]
                 name_props = LogManager._parse_log_name(filename)
-                
+
                 log_files.append(
                     _LogFile(
                         ns_path_gz=file_path,
@@ -181,9 +176,9 @@ class LogManager:
                         local_path_txt=''
                     )
                 )
-            except KeyError as e:
-                logging.error("NetStorage list API file was missing key [%s]: %s", e, child.attrib)
-             
+            except KeyError as key_error:
+                logging.error("NetStorage list API file was missing key [%s]: %s", key_error, child.attrib)
+
         return log_files
 
     @staticmethod
@@ -192,7 +187,7 @@ class LogManager:
 
         parse_result = parse.parse('{ident}_{cp_code:d}.{format}_{sort:l}.{start}-{end}-{part:d}.{encoding}', filename)
         if not isinstance(parse_result, parse.Result):
-            error_message = 'Failed parsing log file name [{}]'.format(filename)
+            error_message = f'Failed parsing log file name [{filename}]'
             logging.error(error_message)
             raise ValueError(error_message)
 
@@ -214,7 +209,7 @@ class LogManager:
     @staticmethod
     def _create_ns_log_path(cp_code: int, storage_group: str, log_dir: str) -> str:
         # TODO: Consider making the user specify full path in log_dir. Mirror how NetStorage UI presents paths.
-        log_path = '/{0}/{1}/'.format(cp_code, storage_group)
+        log_path = f'/{cp_code}/{storage_group}/'
         if log_dir:
             log_path = log_path + log_dir + '/'
         return log_path

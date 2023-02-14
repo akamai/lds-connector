@@ -4,12 +4,13 @@ from src.config import Config
 from src.log_manager import LogManager
 from src.splunk import Splunk
 
+
 class Connector:
     def __init__(self, config: Config):
         self.config = config
         self.log_manager = LogManager(self.config)
         self.splunk = Splunk(self.config)
-    
+
     def run(self):
         log_filename = self.log_manager.get_next_log()
 
@@ -23,7 +24,7 @@ class Connector:
 
     def _process_log_file(self, filename):
         # TODO: Track the last successfully processed log line
-        with open(filename, 'r') as log_file:
+        with open(filename, 'r', encoding='utf-8') as log_file:
             log_line = log_file.readline()
             while log_line:
                 self.splunk.handle_logline(log_line)
