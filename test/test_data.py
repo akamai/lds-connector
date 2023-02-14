@@ -1,5 +1,6 @@
 import os
 from os import path
+import shutil
 
 from src.config import Config, SplunkConfig, NetStorageConfig
 from src.log_manager import _LogFile, _LogNameProps, LogManager
@@ -101,3 +102,22 @@ def get_ns_file3():
         processed=False,
         last_processed_line=-1
     )
+    
+def download_file(log_file: _LogFile):
+    """
+    Mock method of downloading a file
+
+    The desired log file is assumed to exist in data/ directory. 
+    It's copied into the tmp/ download directory.
+    This allows unit testing the Gzip deletion.
+    """
+    source_path: str = path.join(DATA_DIR, log_file.filename_gz)
+    dest_path: str = path.join(TEMP_DIR, log_file.filename_gz)
+    shutil.copyfile(source_path, dest_path)
+
+    log_file.local_path_gz = dest_path
+
+def download_uncompress_file(log_file: _LogFile):
+    download_file(log_file)
+    LogManager._uncompress(log_file)
+    os.remove(log_file.local_path_gz)

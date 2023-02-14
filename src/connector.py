@@ -1,4 +1,5 @@
 import logging
+import os
 
 from src.config import Config
 from src.log_manager import LogManager, _LogFile
@@ -27,14 +28,18 @@ class Connector:
         try:
             with open(log_file.local_path_txt, 'r', encoding='utf-8') as file:
                 log_line = file.readline()
-                line_number = 0
+                line_number = 1
                 while log_line:
-                    self.splunk.handle_logline(log_line)
-                    log_file.last_processed_line = line_number
+                    if line_number > log_file.last_processed_line:
+                        # Only handle lines that haven't been processed already
+                        self.splunk.handle_logline(log_line)
+                        log_file.last_processed_line = line_number
 
                     log_line = file.readline()
                     line_number += 1
                 log_file.processed = True
+
+            os.remove(log_file.local_path_txt)
         except Exception as exception:
             logging.error('An unexpected error has occurred processing log lines [%s]. Ignoring and moving on', exception)
             # TODO: It could be useful to log how many lines were successfully processed?

@@ -158,7 +158,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=LogManagerTest._download_file)
+        log_manager._download = MagicMock(wraps=test_data.download_file)
 
         log_file = log_manager.get_next_log()
 
@@ -190,7 +190,7 @@ class LogManagerTest(unittest.TestCase):
         resume_data = test_data.get_ns_file1()
         resume_data.processed = False
         resume_data.last_processed_line = 2
-        LogManagerTest._download_file(resume_data)
+        test_data.download_file(resume_data)
         LogManager._uncompress(resume_data)
         with open(test_data.RESUME_PATH, 'wb') as file:
             pickle.dump(resume_data, file)
@@ -218,7 +218,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=LogManagerTest._download_file)
+        log_manager._download = MagicMock(wraps=test_data.download_file)
 
         log_file = log_manager.get_next_log()
 
@@ -244,7 +244,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=LogManagerTest._download_file)
+        log_manager._download = MagicMock(wraps=test_data.download_file)
 
         log_file = log_manager.get_next_log()
 
@@ -256,21 +256,6 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(log_file, expected_log_file)
         self.assertTrue(os.path.isfile(expected_log_file.local_path_txt))
         self.assertFalse(os.path.isfile(expected_log_file.local_path_gz))
-
-    @staticmethod
-    def _download_file(log_file: _LogFile):
-        """
-        Mock method of downloading a file
-
-        The desired log file is assumed to exist in data/ directory. 
-        It's copied into the tmp/ download directory.
-        This allows unit testing the Gzip deletion.
-        """
-        source_path: str = path.join(test_data.DATA_DIR, log_file.filename_gz)
-        dest_path: str = path.join(test_data.TEMP_DIR, log_file.filename_gz)
-        shutil.copyfile(source_path, dest_path)
-
-        log_file.local_path_gz = dest_path
 
 if __name__ == '__main__':
     unittest.main()
