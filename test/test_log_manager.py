@@ -24,32 +24,6 @@ class LogManagerTest(unittest.TestCase):
         if path.isdir(test_data.TEMP_DIR):
             shutil.rmtree(test_data.TEMP_DIR)
 
-    def test_create_ns_log_path(self):
-        cp_code = 123456
-        storage_group = 'test_account'
-        log_directory = 'dns_logs'
-
-        expected_path = '/123456/test_account/dns_logs/'
-        actual_path = LogManager._create_ns_log_path(
-            cp_code=cp_code,
-            storage_group=storage_group,
-            log_dir=log_directory)
-
-        self.assertEqual(expected_path, actual_path)
-
-    def test_create_ns_log_path_empty(self):
-        cp_code = 123456
-        storage_group = 'test_account'
-        log_directory = ''
-
-        expected_path = '/123456/test_account/'
-        actual_path = LogManager._create_ns_log_path(
-            cp_code=cp_code,
-            storage_group=storage_group,
-            log_dir=log_directory)
-
-        self.assertEqual(expected_path, actual_path)
-
     def test_parse_log_name(self):
         file_name = "cam_123456.edns_U.202301030300-0400-3.gz"
 
@@ -80,7 +54,7 @@ class LogManagerTest(unittest.TestCase):
 </list>"""
 
         file2 = _LogFile(
-            ns_path_gz='123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz',
+            ns_path_gz='/123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz',
             filename_gz='cam_123456.edns_U.202301030400-0500-0.gz',
             size=2345,
             md5='5d41402abc4b2a76b9719d911017c592',

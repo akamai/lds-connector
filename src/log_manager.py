@@ -65,6 +65,9 @@ class LogManager:
 
     def save_resume_data(self):
         assert self.current_log_file is not None
+
+        LogManager._ensure_dir_exists(self.config.log_download_dir)
+
         with open(self.resume_path, 'wb') as file:
             pickle.dump(self.current_log_file, file)
 
@@ -94,7 +97,6 @@ class LogManager:
             self.save_resume_data()
             self.last_log_file = self.current_log_file
             self.current_log_file = None
-
 
         next_log_file = self._determine_next_log()
         if not next_log_file:
@@ -147,11 +149,9 @@ class LogManager:
     def _list(self) -> list[_LogFile]:
         logging.info('Listing log files from Akamai NetStorage')
 
-        ls_path = LogManager._create_ns_log_path(
-            cp_code=self.config.netstorage_config.cp_code,
-            storage_group=self.config.netstorage_config.account,
-            log_dir=self.config.netstorage_config.log_dir
-        )
+        ls_path = f'/{self.config.netstorage_config.cp_code}'
+        if self.config.netstorage_config.log_dir:
+            ls_path += f'/{self.config.netstorage_config.log_dir}'
 
         _, response = self.netstorage.list(ls_path)
         if response is None or response.status_code != 200:
@@ -163,6 +163,8 @@ class LogManager:
 
     def _download(self, log_file: _LogFile) -> None:
         logging.debug('Downloading file [%s]', log_file.filename_gz)
+
+        LogManager._ensure_dir_exists(self.config.log_download_dir)
 
         local_path_gz = os.path.join(self.config.log_download_dir, log_file.filename_gz)
         self.netstorage.download(log_file.ns_path_gz, local_path_gz)
@@ -203,8 +205,8 @@ class LogManager:
                 continue
 
             try:
-                file_path = child.attrib['name']
-                filename = file_path[file_path.rfind('/') + 1:]
+                file_path = '/' + child.attrib['name']
+                filename = file_path[file_path.rfind('/') + 1:] # TODO: This isn't robust to slashes in the file name
                 name_props = LogManager._parse_log_name(filename)
 
                 log_files.append(
@@ -249,11 +251,9 @@ class LogManager:
             part=parse_result['part'],
             encoding=parse_result['encoding']
         )
-
+    
     @staticmethod
-    def _create_ns_log_path(cp_code: int, storage_group: str, log_dir: str) -> str:
-        # TODO: Consider making the user specify full path in log_dir. Mirror how NetStorage UI presents paths.
-        log_path = f'/{cp_code}/{storage_group}/'
-        if log_dir:
-            log_path = log_path + log_dir + '/'
-        return log_path
+    def _ensure_dir_exists(path: str):
+        if not os.path.isdir(path):
+            logging.debug('Creating missing directory: [%s]', path)
+            os.makedirs(path)

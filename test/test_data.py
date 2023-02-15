@@ -40,7 +40,7 @@ def create_config():
 
 def get_ns_file1():
     return _LogFile(
-        ns_path_gz='123456/cam/logs/cam_123456.edns_U.202301030300-0400-0.gz',
+        ns_path_gz='/123456/cam/logs/cam_123456.edns_U.202301030300-0400-0.gz',
         filename_gz='cam_123456.edns_U.202301030300-0400-0.gz',
         size=1234,
         md5='098f6bcd4621d373cade4e832627b4f6',
@@ -62,7 +62,7 @@ def get_ns_file1():
 
 def get_ns_file2():
     return _LogFile(
-        ns_path_gz='123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz',
+        ns_path_gz='/123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz',
         filename_gz='cam_123456.edns_U.202301030400-0500-0.gz',
         size=2345,
         md5='5d41402abc4b2a76b9719d911017c592',
@@ -84,7 +84,7 @@ def get_ns_file2():
 
 def get_ns_file3():
     return _LogFile(
-        ns_path_gz='123456/cam/logs/cam_123456.edns_U.202301030400-0500-1.gz',
+        ns_path_gz='/123456/cam/logs/cam_123456.edns_U.202301030400-0500-1.gz',
         filename_gz='cam_123456.edns_U.202301030400-0500-1.gz',
         size=3456,
         md5='d850f04cdb48312a9be171e214c0b4ee',
