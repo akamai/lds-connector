@@ -3,6 +3,8 @@ import gzip
 import os
 import shutil
 
+from gzip import GzipFile
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         prog = 'uncompress_gzip_example',
@@ -17,7 +19,7 @@ if __name__ == '__main__':
 
     with gzip.open(args.gzip_file_path, 'rb') as compressed_file:
         with open(new_path, 'wb') as uncompressed_file:
+            assert isinstance(compressed_file, GzipFile)
             shutil.copyfileobj(compressed_file, uncompressed_file)
 
     print("Finished uncompressing file")
-

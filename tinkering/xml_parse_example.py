@@ -1,8 +1,7 @@
 import xml.etree.ElementTree as ET
 
 if __name__ == '__main__':
-
-    list_xml_response = '''<?xml version="1.0" encoding="ISO-8859-1"?>
+    LIST_XML_RESPONSE = '''<?xml version="1.0" encoding="ISO-8859-1"?>
     <list>
         <file type="dir" name="1234/example/"/>
         <file type="dir" name="1234/example/directory/"/>
@@ -12,7 +11,7 @@ if __name__ == '__main__':
         <file type="dir" name="1234/example/passwd/"/>
     </list>'''
 
-    root = ET.fromstring(list_xml_response)
+    root = ET.fromstring(LIST_XML_RESPONSE)
 
     assert root.tag == 'list'
     for child in root:
