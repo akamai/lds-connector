@@ -1,5 +1,12 @@
 ---
 
+splunk :
+  hec :
+    host : "127.0.0.1"
+    port : 8088
+    token : ""
+    use_ssl : false
+
 akamai :
   open :
     client_secret : ""
@@ -12,3 +19,7 @@ akamai :
     cp_code : ""
     key : ""
     use_ssl : false
+    log_dir : 'logs'
+
+connector :
+  log_download_dir : 'tmp/'
