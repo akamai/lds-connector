@@ -12,7 +12,7 @@ from typing import Optional
 import parse
 from akamai.netstorage import Netstorage
 
-from src.config import Config
+from .config import Config
 
 
 @dataclass

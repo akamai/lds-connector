@@ -2,8 +2,8 @@ import logging
 import argparse
 import sys
 
-from src.config import read_yaml_config
-from src.connector import Connector
+from lds_connector.config import read_yaml_config
+from lds_connector.connector import Connector
 
 
 if __name__ == '__main__':

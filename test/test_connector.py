@@ -6,8 +6,8 @@ from os import path
 from test import test_data
 from unittest.mock import MagicMock
 
-from src.connector import Connector
-from src.log_manager import LogManager
+from lds_connector.connector import Connector
+from lds_connector.log_manager import LogManager
 
 
 class ConnectorTest(unittest.TestCase):

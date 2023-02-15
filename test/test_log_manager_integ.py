@@ -1,8 +1,8 @@
 import argparse
 import shutil
 
-from src.config import read_yaml_config
-from src.log_manager import LogManager
+from lds_connector.config import read_yaml_config
+from lds_connector.log_manager import LogManager
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(

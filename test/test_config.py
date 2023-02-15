@@ -2,7 +2,7 @@ import unittest
 from os import path
 from test import test_data
 
-from src.config import read_yaml_config
+from lds_connector.config import read_yaml_config
 
 
 class ConfigTest(unittest.TestCase):

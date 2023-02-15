@@ -2,8 +2,8 @@ import os
 from os import path
 import shutil
 
-from src.config import Config, SplunkConfig, NetStorageConfig
-from src.log_manager import LogFile, LogNameProps, LogManager
+from lds_connector.config import Config, SplunkConfig, NetStorageConfig
+from lds_connector.log_manager import LogFile, LogNameProps, LogManager
 
 
 DATA_DIR = path.join(path.dirname(__file__), 'data')

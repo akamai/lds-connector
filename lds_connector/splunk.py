@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 import parse
 import requests
 
-from src.config import Config
+from .config import Config
 
 
 class Splunk:

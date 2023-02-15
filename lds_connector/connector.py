@@ -1,9 +1,9 @@
 import logging
 import os
 
-from src.config import Config
-from src.log_manager import LogManager, LogFile
-from src.splunk import Splunk
+from .config import Config
+from .log_manager import LogManager, LogFile
+from .splunk import Splunk
 
 
 class Connector:

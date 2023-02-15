@@ -6,7 +6,7 @@ from test import test_data
 from unittest.mock import MagicMock
 import pickle
 
-from src.log_manager import LogManager, LogFile, LogNameProps
+from lds_connector.log_manager import LogManager, LogFile, LogNameProps
 
 
 class LogManagerTest(unittest.TestCase):

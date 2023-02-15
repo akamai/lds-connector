@@ -1,7 +1,7 @@
 import unittest
 from os import path
 
-from src.splunk import Splunk
+from lds_connector.splunk import Splunk
 
 
 class SplunkTest(unittest.TestCase):
