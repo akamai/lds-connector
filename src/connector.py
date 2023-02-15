@@ -2,7 +2,7 @@ import logging
 import os
 
 from src.config import Config
-from src.log_manager import LogManager, _LogFile
+from src.log_manager import LogManager, LogFile
 from src.splunk import Splunk
 
 
@@ -23,7 +23,7 @@ class Connector:
             self._process_log_file(log_file)
             log_file = self.log_manager.get_next_log()
 
-    def _process_log_file(self, log_file: _LogFile):
+    def _process_log_file(self, log_file: LogFile):
         logging.info('Processing log file %s', log_file.local_path_txt)
         try:
             with open(log_file.local_path_txt, 'r', encoding='utf-8') as file:

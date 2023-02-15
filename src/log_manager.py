@@ -16,7 +16,7 @@ from src.config import Config
 
 
 @dataclass
-class _LogNameProps:
+class LogNameProps:
     customer_id: str
     cp_code: int
     format: str
@@ -27,12 +27,12 @@ class _LogNameProps:
 
 
 @dataclass
-class _LogFile:
+class LogFile:
     ns_path_gz: str
     filename_gz: str
     size: int
     md5: str
-    name_props: _LogNameProps
+    name_props: LogNameProps
     local_path_gz: str
     local_path_txt: str
     last_processed_line: int
@@ -44,9 +44,9 @@ class LogManager:
 
     def __init__(self, config: Config):
         # TODO: Persist this to file so script is robust
-        self.current_log_file: Optional[_LogFile] = None
-        self.last_log_file: Optional[_LogFile] = None
-        self.resume_log_file: Optional[_LogFile] = None
+        self.current_log_file: Optional[LogFile] = None
+        self.last_log_file: Optional[LogFile] = None
+        self.resume_log_file: Optional[LogFile] = None
 
         self.config = config
 
@@ -71,7 +71,7 @@ class LogManager:
         with open(self.resume_path, 'wb') as file:
             pickle.dump(self.current_log_file, file)
 
-    def get_next_log(self) -> Optional[_LogFile]:
+    def get_next_log(self) -> Optional[LogFile]:
         if self.resume_log_file is not None:
             # First run. Resume log file found
             if self.resume_log_file.processed:
@@ -113,7 +113,7 @@ class LogManager:
 
         return next_log_file
 
-    def _determine_next_log(self) -> Optional[_LogFile]:
+    def _determine_next_log(self) -> Optional[LogFile]:
         log_files = self._list()
 
         if len(log_files) == 0:
@@ -146,7 +146,7 @@ class LogManager:
         logging.info('No unprocessed log files in NetStorage')
         return None
 
-    def _list(self) -> list[_LogFile]:
+    def _list(self) -> list[LogFile]:
         logging.info('Listing log files from Akamai NetStorage')
 
         ls_path = f'/{self.config.netstorage_config.cp_code}'
@@ -161,7 +161,7 @@ class LogManager:
 
         return LogManager._parse_list_response(response.text)
 
-    def _download(self, log_file: _LogFile) -> None:
+    def _download(self, log_file: LogFile) -> None:
         logging.debug('Downloading file [%s]', log_file.filename_gz)
 
         LogManager._ensure_dir_exists(self.config.log_download_dir)
@@ -173,7 +173,7 @@ class LogManager:
         logging.debug('Finished downloading file [%s]', log_file.filename_gz)
 
     @staticmethod
-    def _uncompress(log_file: _LogFile) -> None:
+    def _uncompress(log_file: LogFile) -> None:
         local_path_txt = os.path.splitext(log_file.local_path_gz)[0] + ".txt"
 
         logging.debug('Uncompressing file [%s] to [%s]', log_file.local_path_gz, local_path_txt)
@@ -187,11 +187,11 @@ class LogManager:
         logging.debug('Finished uncompressing file [%s] into [%s]', log_file.local_path_gz, local_path_txt)
 
     @staticmethod
-    def _delete_gzip(log_file: _LogFile) -> None:
+    def _delete_gzip(log_file: LogFile) -> None:
         os.remove(log_file.local_path_gz)
 
     @staticmethod
-    def _parse_list_response(response_xml: str) -> list[_LogFile]:
+    def _parse_list_response(response_xml: str) -> list[LogFile]:
         root = ET.fromstring(response_xml)
 
         if root.tag != 'list':
@@ -210,7 +210,7 @@ class LogManager:
                 name_props = LogManager._parse_log_name(filename)
 
                 log_files.append(
-                    _LogFile(
+                    LogFile(
                         ns_path_gz=file_path,
                         filename_gz=filename,
                         size=int(child.attrib['size']),
@@ -228,7 +228,7 @@ class LogManager:
         return log_files
 
     @staticmethod
-    def _parse_log_name(filename: str) -> _LogNameProps:
+    def _parse_log_name(filename: str) -> LogNameProps:
         # TODO: This is not robust to every log format. See https://techdocs.akamai.com/log-delivery/docs/file-names
 
         parse_result = parse.parse('{ident}_{cp_code:d}.{format}_{sort:l}.{start}-{end}-{part:d}.{encoding}', filename)
@@ -242,7 +242,7 @@ class LogManager:
         start_dt = datetime.strptime(parse_result['start'], full_format)
         start_dt = start_dt.replace(tzinfo=timezone.utc)
 
-        return _LogNameProps(
+        return LogNameProps(
             customer_id=parse_result['ident'],
             cp_code=parse_result['cp_code'],
             format=parse_result['format'],

@@ -6,7 +6,7 @@ from test import test_data
 from unittest.mock import MagicMock
 import pickle
 
-from src.log_manager import LogManager, _LogFile, _LogNameProps
+from src.log_manager import LogManager, LogFile, LogNameProps
 
 
 class LogManagerTest(unittest.TestCase):
@@ -27,7 +27,7 @@ class LogManagerTest(unittest.TestCase):
     def test_parse_log_name(self):
         file_name = "cam_123456.edns_U.202301030300-0400-3.gz"
 
-        expected_name_props = _LogNameProps(
+        expected_name_props = LogNameProps(
             customer_id='cam',
             cp_code=123456,
             format='edns',
@@ -53,12 +53,12 @@ class LogManagerTest(unittest.TestCase):
     <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="2345" md5="5d41402abc4b2a76b9719d911017c592"/>
 </list>"""
 
-        file2 = _LogFile(
+        file2 = LogFile(
             ns_path_gz='/123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz',
             filename_gz='cam_123456.edns_U.202301030400-0500-0.gz',
             size=2345,
             md5='5d41402abc4b2a76b9719d911017c592',
-            name_props= _LogNameProps(
+            name_props= LogNameProps(
                 customer_id='cam',
                 cp_code=123456,
                 format='edns',
