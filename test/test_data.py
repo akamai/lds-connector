@@ -21,7 +21,9 @@ NS_LIST_RESPONSE = """<?xml version="1.0" encoding="ISO-8859-1"?>
 def create_config():
     return Config(
         splunk_config=SplunkConfig(
-            hec_host="127.0.0.1",
+            host="127.0.0.1",
+            source_type='lds_log_dns',
+            index='sandbox',
             hec_port=8088,
             hec_token="test_hec_token",
             hec_use_ssl=False
@@ -34,7 +36,9 @@ def create_config():
             use_ssl=True,
             log_dir='logs1'
         ),
-        log_download_dir=os.path.abspath('logs2')
+        log_download_dir=os.path.abspath('logs2'),
+        timestamp_parse='{} - {} {timestamp},{}',
+        timestamp_strptime='%d/%m/%Y %H:%M:%S'
     )
 
 

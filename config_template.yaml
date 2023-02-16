@@ -1,8 +1,10 @@
 ---
 
 splunk :
+  host : "127.0.0.1"
+  source_type: "lds_log_dns"
+  index: "sandbox"
   hec :
-    host : "127.0.0.1"
     port : 8088
     token : ""
     use_ssl : false
@@ -22,4 +24,6 @@ akamai :
     log_dir : 'logs'
 
 connector :
-  log_download_dir : 'tmp/'
+  log_download_dir : 'tmp/'  
+  timestamp_parse: '{} - {} {timestamp},{}'
+  timestamp_strptime: '%d/%m/%Y %H:%M:%S'

@@ -1,5 +1,6 @@
 import unittest
 from os import path
+from test import test_data
 
 from lds_connector.splunk import Splunk
 
@@ -15,15 +16,20 @@ class SplunkTest(unittest.TestCase):
     ]
 
     def test_parse_timestamp(self):
+        config = test_data.create_config()
+        splunk = Splunk(config)
+
         for (expected_timestamp, log_line) in SplunkTest._TIMESTAMP_TO_LOG_LINE:
-            actual_timestamp = Splunk._parse_timestamp(log_line)
+            actual_timestamp = splunk._parse_timestamp(log_line)
             self.assertEqual(actual_timestamp, expected_timestamp)
 
     def test_parse_all_logs(self):
         # Test parsing on real log data. Ensure no exceptions are thrown
+        config = test_data.create_config()
+        splunk = Splunk(config)
 
         for log_line in SplunkTest.read_log_lines():
-            Splunk._parse_timestamp(log_line)
+            splunk._parse_timestamp(log_line)
 
     @staticmethod
     def read_log_lines() -> list[str]:

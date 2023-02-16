@@ -43,7 +43,6 @@ class LogManager:
     _RESUME_PICKLE_FILE_NAME = 'resume.pickle'
 
     def __init__(self, config: Config):
-        # TODO: Persist this to file so script is robust
         self.current_log_file: Optional[LogFile] = None
         self.last_log_file: Optional[LogFile] = None
         self.resume_log_file: Optional[LogFile] = None

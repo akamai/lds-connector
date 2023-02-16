@@ -7,7 +7,9 @@ import yaml
 
 @dataclass
 class SplunkConfig:
-    hec_host: str
+    host: str
+    source_type: str
+    index: str
     hec_port: int
     hec_token: str
     hec_use_ssl: bool
@@ -28,6 +30,8 @@ class Config:
     splunk_config: SplunkConfig
     netstorage_config: NetStorageConfig
     log_download_dir: str
+    timestamp_strptime: str
+    timestamp_parse: str
 
 
 _KEY_AKAMAI = "akamai"
@@ -40,14 +44,18 @@ _KEY_NS_SSL = "use_ssl"
 _KEY_NS_LOG_DIR = "log_dir"
 
 _KEY_SPLUNK = "splunk"
+_KEY_SPLUNK_HOST = "host"
 _KEY_SPLUNK_HEC = "hec"
-_KEY_SPLUNK_HEC_HOST = "host"
 _KEY_SPLUNK_HEC_PORT = "port"
 _KEY_SPLUNK_HEC_TOKEN = "token"
 _KEY_SPLUNK_HEC_SSL = "use_ssl"
+_KEY_SPLUNK_SOURCE_TYPE = "source_type"
+_KEY_SPLUNK_INDEX = "index"
 
 _KEY_CONNECTOR = "connector"
 _KEY_CONNECTOR_LOG_DIR = "log_download_dir"
+_KEY_CONNECTOR_TIMESTAMP_PARSE = "timestamp_parse"
+_KEY_CONNECTOR_TIMESTAMP_STRPTIME = "timestamp_strptime"
 
 
 def read_yaml_config(yaml_stream) -> Optional[Config]:
@@ -67,21 +75,25 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             log_dir=ns_yaml_config[_KEY_NS_LOG_DIR]
         )
 
-        splunk_yaml_config = yaml_config[_KEY_SPLUNK][_KEY_SPLUNK_HEC]
+        splunk_yaml_config = yaml_config[_KEY_SPLUNK]
+        splunk_hec_yaml_config = splunk_yaml_config[_KEY_SPLUNK_HEC]
         splunk_config = SplunkConfig(
-            hec_host=splunk_yaml_config[_KEY_SPLUNK_HEC_HOST],
-            hec_port=splunk_yaml_config[_KEY_SPLUNK_HEC_PORT],
-            hec_token=splunk_yaml_config[_KEY_SPLUNK_HEC_TOKEN],
-            hec_use_ssl=splunk_yaml_config[_KEY_SPLUNK_HEC_SSL]
+            host=splunk_yaml_config[_KEY_SPLUNK_HOST],
+            source_type=splunk_yaml_config[_KEY_SPLUNK_SOURCE_TYPE],
+            index=splunk_yaml_config[_KEY_SPLUNK_INDEX],
+            hec_port=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_PORT],
+            hec_token=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_TOKEN],
+            hec_use_ssl=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_SSL]
         )
 
-        connector_config = yaml_config[_KEY_CONNECTOR]
+        connector_yaml_config = yaml_config[_KEY_CONNECTOR]
 
         return Config(
             splunk_config=splunk_config,
             netstorage_config=ns_config,
-            # TODO: Accept abs or relative path
-            log_download_dir=os.path.abspath(connector_config[_KEY_CONNECTOR_LOG_DIR])
+            log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
+            timestamp_parse=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_PARSE],
+            timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME]
         )
     except KeyError as key_error:
         logging.error("Configuration file missing key %s", key_error.args[0])
