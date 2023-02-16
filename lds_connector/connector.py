@@ -44,6 +44,9 @@ class Connector:
             logging.error('An unexpected error has occurred processing log lines [%s]. Ignoring and moving on', exception)
             # TODO: It could be useful to log how many lines were successfully processed?
         finally:
-            self.log_manager.save_resume_data()
+            if log_file.last_processed_line != -1:
+                # Only update resume save file if some lines were processed
+                # If multiple log files fail (say Splunk is down), we want to resume at the first failing log file
+                self.log_manager.save_resume_data()
             logging.info('Processed log file %s. Finished processing: %d. Last line processed: %d', \
                 log_file.local_path_txt, log_file.processed, log_file.last_processed_line)
