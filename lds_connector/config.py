@@ -32,6 +32,7 @@ class Config:
     log_download_dir: str
     timestamp_strptime: str
     timestamp_parse: str
+    poll_period_sec: int
 
 
 _KEY_AKAMAI = "akamai"
@@ -56,6 +57,7 @@ _KEY_CONNECTOR = "connector"
 _KEY_CONNECTOR_LOG_DIR = "log_download_dir"
 _KEY_CONNECTOR_TIMESTAMP_PARSE = "timestamp_parse"
 _KEY_CONNECTOR_TIMESTAMP_STRPTIME = "timestamp_strptime"
+_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = "log_poll_period_sec"
 
 
 def read_yaml_config(yaml_stream) -> Optional[Config]:
@@ -93,9 +95,9 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             netstorage_config=ns_config,
             log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
             timestamp_parse=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_PARSE],
-            timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME]
+            timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME],
+            poll_period_sec=connector_yaml_config[_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC]
         )
     except KeyError as key_error:
         logging.error("Configuration file missing key %s", key_error.args[0])
-        # TODO: Add termination handler to clean-up
         return None

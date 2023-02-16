@@ -1,12 +1,14 @@
 import logging
 import argparse
 import sys
+import sched
+import time
 
-from lds_connector.config import read_yaml_config
+from lds_connector.config import read_yaml_config, Config
 from lds_connector.connector import Connector
 
 
-if __name__ == '__main__':
+def main():
     # Parse command line arguments
     parser = argparse.ArgumentParser(
         prog = 'lds_connector.py',
@@ -28,10 +30,19 @@ if __name__ == '__main__':
     # Parse config from YAML file stream
     config = read_yaml_config(args.config)
     args.config.close()
-
     if not config:
         sys.exit(1)
 
-    # Start connector
     connector = Connector(config)
-    connector.run() # TODO: call this on a timer
+    scheduler = sched.scheduler(time.time, time.sleep)
+    scheduler.enter(delay=0,  priority=1, action=sched_wrapper, argument=(scheduler, connector, config))
+    scheduler.run()
+
+
+def sched_wrapper(scheduler: sched.scheduler, connector: Connector, config: Config):
+    connector.run()
+    scheduler.enter(delay=config.poll_period_sec, priority=1, action=sched_wrapper, argument=(scheduler, connector, config))
+
+
+if __name__ == '__main__':
+    main()

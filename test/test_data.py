@@ -38,7 +38,8 @@ def create_config():
         ),
         log_download_dir=os.path.abspath('logs2'),
         timestamp_parse='{} - {} {timestamp},{}',
-        timestamp_strptime='%d/%m/%Y %H:%M:%S'
+        timestamp_strptime='%d/%m/%Y %H:%M:%S',
+        poll_period_sec=60
     )
 
 

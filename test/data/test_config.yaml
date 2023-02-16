@@ -22,3 +22,4 @@ connector :
   log_download_dir : "logs2"
   timestamp_parse: "{} - {} {timestamp},{}"
   timestamp_strptime: "%d/%m/%Y %H:%M:%S"
+  log_poll_period_sec: 60

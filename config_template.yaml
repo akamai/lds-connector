@@ -10,11 +10,6 @@ splunk :
     use_ssl : false
 
 akamai :
-  open :
-    client_secret : ""
-    host : ""
-    access_token : ""
-    client_token : ""
   netstorage : 
     host : ""
     upload_account : ""
@@ -27,3 +22,4 @@ connector :
   log_download_dir : 'tmp/'  
   timestamp_parse: '{} - {} {timestamp},{}'
   timestamp_strptime: '%d/%m/%Y %H:%M:%S'
+  log_poll_period_sec : 30
