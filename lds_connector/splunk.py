@@ -27,10 +27,12 @@ class Splunk:
             'time': timestamp_sec,
             'host': socket.gethostname(),
             'source': 'splunk-lds-connector',
-            'sourcetype': self.config.splunk_config.source_type,
-            'index': self.config.splunk_config.index,
             'event': log_line
         }
+        if self.config.splunk_config.hec_source_type:
+            hec_json['sourcetype'] = self.config.splunk_config.hec_source_type
+        if self.config.splunk_config.hec_index:
+            hec_json['index'] = self.config.splunk_config.hec_index
 
         self._publish_hec_event(hec_json)
 

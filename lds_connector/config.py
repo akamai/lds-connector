@@ -8,8 +8,8 @@ import yaml
 @dataclass
 class SplunkConfig:
     host: str
-    source_type: str
-    index: str
+    hec_source_type: Optional[str]
+    hec_index: Optional[str]
     hec_port: int
     hec_token: str
     hec_use_ssl: bool
@@ -50,8 +50,8 @@ _KEY_SPLUNK_HEC = "hec"
 _KEY_SPLUNK_HEC_PORT = "port"
 _KEY_SPLUNK_HEC_TOKEN = "token"
 _KEY_SPLUNK_HEC_SSL = "use_ssl"
-_KEY_SPLUNK_SOURCE_TYPE = "source_type"
-_KEY_SPLUNK_INDEX = "index"
+_KEY_SPLUNK_HEC_SOURCE_TYPE = "source_type"
+_KEY_SPLUNK_HEC_INDEX = "index"
 
 _KEY_CONNECTOR = "connector"
 _KEY_CONNECTOR_LOG_DIR = "log_download_dir"
@@ -81,8 +81,8 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
         splunk_hec_yaml_config = splunk_yaml_config[_KEY_SPLUNK_HEC]
         splunk_config = SplunkConfig(
             host=splunk_yaml_config[_KEY_SPLUNK_HOST],
-            source_type=splunk_yaml_config[_KEY_SPLUNK_SOURCE_TYPE],
-            index=splunk_yaml_config[_KEY_SPLUNK_INDEX],
+            hec_source_type=splunk_hec_yaml_config.get(_KEY_SPLUNK_HEC_SOURCE_TYPE),
+            hec_index=splunk_hec_yaml_config.get(_KEY_SPLUNK_HEC_INDEX),
             hec_port=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_PORT],
             hec_token=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_TOKEN],
             hec_use_ssl=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_SSL]
@@ -96,7 +96,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
             timestamp_parse=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_PARSE],
             timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME],
-            poll_period_sec=connector_yaml_config[_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC]
+            poll_period_sec=connector_yaml_config.get(_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC, 60)
         )
     except KeyError as key_error:
         logging.error("Configuration file missing key %s", key_error.args[0])

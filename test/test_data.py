@@ -22,8 +22,8 @@ def create_config():
     return Config(
         splunk_config=SplunkConfig(
             host="127.0.0.1",
-            source_type='lds_log_dns',
-            index='sandbox',
+            hec_source_type='lds_log_dns',
+            hec_index='sandbox',
             hec_port=8088,
             hec_token="test_hec_token",
             hec_use_ssl=False

@@ -1,0 +1,25 @@
+---
+
+splunk :
+  host : "127.0.0.1"
+  hec :
+    source_type: "lds_log_dns"
+    index: "sandbox"
+    port : 8088
+    token : "test_hec_token"
+    use_ssl : false
+
+akamai :
+  netstorage : 
+    host : "test_ns_host"
+    upload_account : "test_ns_account"
+    cp_code : 123456
+    key : "test_key"
+    use_ssl : true
+    log_dir : 'logs1'
+
+connector :
+  log_download_dir : "logs2"
+  timestamp_parse: "{} - {} {timestamp},{}"
+  timestamp_strptime: "%d/%m/%Y %H:%M:%S"
+  log_poll_period_sec: 60

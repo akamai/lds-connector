@@ -2,8 +2,6 @@
 
 splunk :
   host : "127.0.0.1"
-  source_type: "lds_log_dns"
-  index: "sandbox"
   hec :
     port : 8088
     token : "test_hec_token"
@@ -22,4 +20,3 @@ connector :
   log_download_dir : "logs2"
   timestamp_parse: "{} - {} {timestamp},{}"
   timestamp_strptime: "%d/%m/%Y %H:%M:%S"
-  log_poll_period_sec: 60

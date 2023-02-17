@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock, ANY
 from os import path
 from test import test_data
 
@@ -30,6 +31,42 @@ class SplunkTest(unittest.TestCase):
 
         for log_line in SplunkTest.read_log_lines():
             splunk._parse_timestamp(log_line)
+
+    def test_handle_log_line(self):
+        config = test_data.create_config()
+        splunk = Splunk(config)
+        splunk._publish_hec_event = MagicMock()
+        log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0][1]
+
+        splunk.handle_logline(log_line)
+
+        expected_event = {
+            'time': 1672715199.0,
+            'host': ANY,
+            'source': 'splunk-lds-connector',
+            'event': log_line,
+            'sourcetype': config.splunk_config.hec_source_type,
+            'index': config.splunk_config.hec_index
+        }
+        splunk._publish_hec_event.assert_called_once_with(expected_event)
+
+    def test_handle_log_line_no_optionals(self):
+        config = test_data.create_config()
+        config.splunk_config.hec_source_type = None
+        config.splunk_config.hec_index = None
+        splunk = Splunk(config)
+        splunk._publish_hec_event = MagicMock()
+        log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0][1]
+
+        splunk.handle_logline(log_line)
+
+        expected_event = {
+            'time': 1672715199.0,
+            'host': ANY,
+            'source': 'splunk-lds-connector',
+            'event': log_line
+        }
+        splunk._publish_hec_event.assert_called_once_with(expected_event)
 
     @staticmethod
     def read_log_lines() -> list[str]:
