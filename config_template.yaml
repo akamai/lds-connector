@@ -1,25 +1,25 @@
 ---
 
 splunk :
-  host : "127.0.0.1"
-  source_type: "lds_log_dns"
-  index: "sandbox"
+  host : "127.0.0.1"            # Splunk instance's host name / IP
+  source_type: "lds_log_dns"    # Source type for events
+  index: "sandbox"              # Index to stores events in. Must match HEC token's allow list
   hec :
-    port : 8088
-    token : ""
-    use_ssl : false
+    port : 8088       # HEC port
+    token : ""        # HEC token
+    use_ssl : false   # Use SSL for HEC API
 
 akamai :
   netstorage : 
-    host : ""
-    upload_account : ""
-    cp_code : ""
-    key : ""
-    use_ssl : false
-    log_dir : 'logs'
+    host : ""               # NetStorage HTTP domain name
+    upload_account : ""     # Upload account name
+    cp_code : ""            # Upload directory's CP code
+    key : ""                # HTTP CMS API key
+    use_ssl : false         # Use SSL for NetStorage API
+    log_dir : 'logs'        # Log directory path. Excludes CP code
 
 connector :
-  log_download_dir : 'tmp/'  
-  timestamp_parse: '{} - {} {timestamp},{}'
-  timestamp_strptime: '%d/%m/%Y %H:%M:%S'
-  log_poll_period_sec : 30
+  log_download_dir : 'tmp/'                   # Local log download directory
+  timestamp_parse: '{} - {} {timestamp},{}'   # Parse format string. Indicates where timestamp is in log line. Will likely change soon
+  timestamp_strptime: '%d/%m/%Y %H:%M:%S'     # Strptime format string. Indicates how timestamp is formatted. Will likely change soon
+  log_poll_period_sec : 30                    # How frequently script should check NetStorage for new logs
