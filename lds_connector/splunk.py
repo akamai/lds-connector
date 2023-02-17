@@ -2,6 +2,7 @@ import logging
 import socket
 from datetime import datetime, timezone
 from urllib.parse import urljoin
+import json
 
 import parse
 import requests
@@ -15,8 +16,13 @@ class Splunk:
 
     def __init__(self, config: Config):
         self.config = config
+        self.queue = []
 
     def handle_logline(self, log_line: str) -> None:
+        pass
+
+
+    def add(self, log_line: str) -> None:
         try:
             timestamp_sec = self._parse_timestamp(log_line)
         except ValueError:
@@ -34,17 +40,34 @@ class Splunk:
         if self.config.splunk_config.hec_index:
             hec_json['index'] = self.config.splunk_config.hec_index
 
-        self._publish_hec_event(hec_json)
+        self.queue.append(hec_json)
 
-    def _publish_hec_event(self, hec_json: dict) -> None:
+    def publish(self, force=False) -> bool:
+        if len(self.queue) == 0:
+            return False
+
+        if len(self.queue) < self.config.splunk_config.hec_batch_size and not force:
+            return False
+
+        self._publish(self.queue)
+
+        self.queue = []
+        return True
+
+    def clear(self):
+        self.queue.clear()
+
+    def _publish(self, events):
         protocol = "https://" if self.config.splunk_config.hec_use_ssl else "http://"
         baseurl = f'{protocol}{self.config.splunk_config.host}:{self.config.splunk_config.hec_port}'
         url = urljoin(baseurl, Splunk._HEC_ENDPOINT)
         headers = {"Authorization": "Splunk " + self.config.splunk_config.hec_token}
 
-        response = requests.post(url, headers=headers, json=hec_json, timeout=Splunk._TIMEOUT_SEC)
+        events_json = '\n'.join([json.dumps(event) for event in events])
+
+        response = requests.post(url, headers=headers, data=events_json, timeout=Splunk._TIMEOUT_SEC)
         if response.status_code != 200:
-            logging.error('Failed sending event to Splunk HEC endpoint [%s]', hec_json)
+            logging.error('Splunk HEC responded with [%s]. Ignoring and moving on', response.status_code)
 
     def _parse_timestamp(self, log_line: str) -> float:
         # Parse timestamp substring using format string

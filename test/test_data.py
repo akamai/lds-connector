@@ -26,7 +26,8 @@ def create_config():
             hec_index='sandbox',
             hec_port=8088,
             hec_token="test_hec_token",
-            hec_use_ssl=False
+            hec_use_ssl=False,
+            hec_batch_size=8
         ),
         netstorage_config=NetStorageConfig(
             host="test_ns_host",

@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock
 from os import path
 from test import test_data
+import socket
 
 from lds_connector.splunk import Splunk
 
@@ -32,41 +33,131 @@ class SplunkTest(unittest.TestCase):
         for log_line in SplunkTest.read_log_lines():
             splunk._parse_timestamp(log_line)
 
-    def test_handle_log_line(self):
+    def test_publish(self):
         config = test_data.create_config()
-        splunk = Splunk(config)
-        splunk._publish_hec_event = MagicMock()
-        log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0][1]
+        config.splunk_config.hec_batch_size = 1
 
-        splunk.handle_logline(log_line)
+        splunk = Splunk(config)
+        splunk._publish = MagicMock()
+        
+        timestamp, log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0]
+
+        splunk.add(log_line)
+        self.assertTrue(splunk.publish())
 
         expected_event = {
-            'time': 1672715199.0,
-            'host': ANY,
+            'time': timestamp,
+            'host': socket.gethostname(),
             'source': 'splunk-lds-connector',
             'event': log_line,
             'sourcetype': config.splunk_config.hec_source_type,
             'index': config.splunk_config.hec_index
         }
-        splunk._publish_hec_event.assert_called_once_with(expected_event)
+        splunk._publish.assert_called_once_with([expected_event])
 
-    def test_handle_log_line_no_optionals(self):
+    def test_publish_no_optionals(self):
         config = test_data.create_config()
         config.splunk_config.hec_source_type = None
         config.splunk_config.hec_index = None
+        config.splunk_config.hec_batch_size = 1
+        
         splunk = Splunk(config)
-        splunk._publish_hec_event = MagicMock()
-        log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0][1]
+        splunk._publish = MagicMock()
 
-        splunk.handle_logline(log_line)
+        timestamp, log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0]
+
+        splunk.add(log_line)
+        self.assertTrue(splunk.publish())
 
         expected_event = {
-            'time': 1672715199.0,
-            'host': ANY,
+            'time': timestamp,
+            'host': socket.gethostname(),
             'source': 'splunk-lds-connector',
             'event': log_line
         }
-        splunk._publish_hec_event.assert_called_once_with(expected_event)
+        splunk._publish.assert_called_once_with([expected_event])
+
+    def test_publish_no_events(self):
+        config = test_data.create_config()
+        config.splunk_config.hec_batch_size = 1
+
+        splunk = Splunk(config)
+        splunk._publish = MagicMock()
+
+        self.assertFalse(splunk.publish())
+        
+        splunk._publish.assert_not_called()
+
+    def test_publish_not_full_batch(self):
+        config = test_data.create_config()
+        config.splunk_config.hec_batch_size = 3
+
+        splunk = Splunk(config)
+        splunk._publish = MagicMock()
+
+        log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0][1]
+
+        splunk.add(log_line)
+        self.assertFalse(splunk.publish())
+
+        splunk.add(log_line)
+        self.assertFalse(splunk.publish())
+
+        splunk._publish.assert_not_called()
+
+    def test_publish_full_batch(self):
+        config = test_data.create_config()
+        config.splunk_config.hec_batch_size = 3
+
+        splunk = Splunk(config)
+        splunk._publish = MagicMock()
+
+        timestamp, log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0]
+
+        splunk.add(log_line)
+        self.assertFalse(splunk.publish())
+
+        splunk.add(log_line)
+        self.assertFalse(splunk.publish())
+
+        splunk.add(log_line)
+        self.assertTrue(splunk.publish())
+
+        expected_event = {
+            'time': timestamp,
+            'host': socket.gethostname(),
+            'source': 'splunk-lds-connector',
+            'event': log_line,
+            'sourcetype': config.splunk_config.hec_source_type,
+            'index': config.splunk_config.hec_index
+        }
+
+        splunk._publish.assert_called_once_with([expected_event, expected_event, expected_event])
+
+    def test_publish_force_not_full_batch(self):
+        config = test_data.create_config()
+        config.splunk_config.hec_batch_size = 3
+
+        splunk = Splunk(config)
+        splunk._publish = MagicMock()
+
+        timestamp, log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0]
+
+        splunk.add(log_line)
+        self.assertFalse(splunk.publish())
+
+        splunk.add(log_line)
+        self.assertTrue(splunk.publish(force=True))
+
+        expected_event = {
+            'time': timestamp,
+            'host': socket.gethostname(),
+            'source': 'splunk-lds-connector',
+            'event': log_line,
+            'sourcetype': config.splunk_config.hec_source_type,
+            'index': config.splunk_config.hec_index
+        }
+        splunk._publish.assert_called_once_with([expected_event, expected_event])
 
     @staticmethod
     def read_log_lines() -> list[str]:

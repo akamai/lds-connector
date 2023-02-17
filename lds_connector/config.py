@@ -13,6 +13,7 @@ class SplunkConfig:
     hec_port: int
     hec_token: str
     hec_use_ssl: bool
+    hec_batch_size: int
 
 
 @dataclass
@@ -52,6 +53,7 @@ _KEY_SPLUNK_HEC_TOKEN = "token"
 _KEY_SPLUNK_HEC_SSL = "use_ssl"
 _KEY_SPLUNK_HEC_SOURCE_TYPE = "source_type"
 _KEY_SPLUNK_HEC_INDEX = "index"
+_KEY_SPLUNK_HEC_BATCH_SIZE = "batch_size"
 
 _KEY_CONNECTOR = "connector"
 _KEY_CONNECTOR_LOG_DIR = "log_download_dir"
@@ -85,7 +87,8 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             hec_index=splunk_hec_yaml_config.get(_KEY_SPLUNK_HEC_INDEX),
             hec_port=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_PORT],
             hec_token=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_TOKEN],
-            hec_use_ssl=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_SSL]
+            hec_use_ssl=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_SSL],
+            hec_batch_size=splunk_hec_yaml_config.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
         )
 
         connector_yaml_config = yaml_config[_KEY_CONNECTOR]

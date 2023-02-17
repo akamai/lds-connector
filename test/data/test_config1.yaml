@@ -8,6 +8,7 @@ splunk :
     port : 8088
     token : "test_hec_token"
     use_ssl : false
+    batch_size : 8
 
 akamai :
   netstorage : 

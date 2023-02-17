@@ -7,7 +7,6 @@ from test import test_data
 from unittest.mock import MagicMock
 
 from lds_connector.connector import Connector
-from lds_connector.log_manager import LogManager
 
 
 class ConnectorTest(unittest.TestCase):
@@ -35,7 +34,7 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk.handle_logline = MagicMock()
+        connector.splunk._publish = MagicMock()
 
         connector.run()
 
@@ -44,7 +43,8 @@ class ConnectorTest(unittest.TestCase):
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
         connector.log_manager.save_resume_data.assert_called_once()
-        connector.splunk.handle_logline.assert_called()
+        connector.splunk._publish.assert_called()
+        # TODO: Assert call count
 
 
     def test_run_multiple_logs(self):
@@ -59,7 +59,7 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file1, log_file2, None])
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk.handle_logline = MagicMock()
+        connector.splunk._publish= MagicMock()
 
         connector.run()
 
@@ -73,7 +73,8 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.save_resume_data.assert_called()
         self.assertEqual(connector.log_manager.save_resume_data.call_count, 2)
-        connector.splunk.handle_logline.assert_called()
+        connector.splunk._publish.assert_called()
+        self.assertEqual(connector.splunk._publish.call_count, 4)
 
     def test_run_no_logs(self):
         config = test_data.create_config()
@@ -100,13 +101,13 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file1, log_file2, None])
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk.handle_logline = MagicMock(
+        connector.splunk._publish = MagicMock(
             side_effect=itertools.chain([None, ConnectionError()], itertools.repeat(None)))
 
         connector.run()
 
         self.assertFalse(log_file1.processed)
-        self.assertEqual(log_file1.last_processed_line, 1)
+        self.assertEqual(log_file1.last_processed_line, 8)
         self.assertTrue(os.path.isfile(log_file1.local_path_txt))
 
         self.assertTrue(log_file2.processed)
@@ -116,7 +117,8 @@ class ConnectorTest(unittest.TestCase):
         connector.log_manager.save_resume_data.assert_called()
         self.assertEqual(connector.log_manager.save_resume_data.call_count, 2)
 
-        connector.splunk.handle_logline.assert_called()
+        connector.splunk._publish.assert_called()
+        self.assertEqual(connector.splunk._publish.call_count, 4)
 
     def test_resume_from_line_number(self):
         lines_already_processed = 7
@@ -131,7 +133,7 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk.handle_logline = MagicMock()
+        connector.splunk._publish = MagicMock()
 
         connector.run()
 
@@ -140,8 +142,9 @@ class ConnectorTest(unittest.TestCase):
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
         connector.log_manager.save_resume_data.assert_called_once()
-        connector.splunk.handle_logline.assert_called() 
-        self.assertEqual(connector.splunk.handle_logline.call_count, total_lines - lines_already_processed)
+        connector.splunk._publish.assert_called()
+        self.assertEqual(connector.splunk._publish.call_count, 1)
+
 
 if __name__ == '__main__':
     unittest.main()

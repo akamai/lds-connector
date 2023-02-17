@@ -20,6 +20,7 @@ class ConfigTest(unittest.TestCase):
         expected_config = test_data.create_config()
         expected_config.splunk_config.hec_index = None
         expected_config.splunk_config.hec_source_type = None
+        expected_config.splunk_config.hec_batch_size = 10
         expected_config.poll_period_sec = 60
 
         config_filename = path.join(test_data.DATA_DIR, 'test_config2.yaml')

@@ -28,25 +28,30 @@ class Connector:
         try:
             with open(log_file.local_path_txt, 'r', encoding='utf-8') as file:
                 log_line = file.readline()
-                line_number = 1
+                line_number = 0
                 while log_line:
+                    line_number += 1
                     if line_number > log_file.last_processed_line:
                         # Only handle lines that haven't been processed already
-                        self.splunk.handle_logline(log_line)
-                        log_file.last_processed_line = line_number
+                        self.splunk.add(log_line)
+                        if self.splunk.publish():
+                            log_file.last_processed_line = line_number
 
                     log_line = file.readline()
-                    line_number += 1
+
+                # Publish remaining log lines
+                if self.splunk.publish(force=True):
+                    log_file.last_processed_line = line_number
                 log_file.processed = True
 
             os.remove(log_file.local_path_txt)
         except Exception as exception:
-            logging.error('An unexpected error has occurred processing log lines [%s]. Ignoring and moving on', exception)
-            # TODO: It could be useful to log how many lines were successfully processed?
+            logging.error('An unexpected error has occurred processing log file. [%s]. Ignoring and moving on', exception)
         finally:
             if log_file.last_processed_line != -1:
                 # Only update resume save file if some lines were processed
                 # If multiple log files fail (say Splunk is down), we want to resume at the first failing log file
                 self.log_manager.save_resume_data()
+            self.splunk.clear()
             logging.info('Processed log file %s. Finished processing: %d. Last line processed: %d', \
                 log_file.local_path_txt, log_file.processed, log_file.last_processed_line)
