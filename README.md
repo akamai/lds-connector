@@ -1,14 +1,15 @@
-
 Akamai Log Delivery Service Connector 
-==============================================
+=====================================
 
 This script moves log data from Akamai's Log Delivery Service (LDS) into a Splunk instance. Support for additional
 destinations may be added in the future.
 
 This project is in early development. 
 
+
 Background
 ===========
+
 
 Akamai
 ------
@@ -72,6 +73,7 @@ This solution will continuously move log data into Splunk without user intervent
 Getting Started
 ===============
 
+
 NetStorage Configuration
 ------------------------
 
@@ -121,6 +123,7 @@ Next, we'll configure an upload account to access the upload directory.
 5. Done!
 
 Great job! NetStorage is configured. It can take a few minutes for the upload account permissions to propagate.
+
 
 Log Delivery Service Configuration
 ---------------------------------
@@ -180,14 +183,17 @@ Finally, we'll enable the HTTP Event Collector endpoint
 
 Great job! Splunk is configured.
 
+
 Script
 ======
+
 
 Configuration
 -------------
 
 The script is configured using a YAML file. The `config_template.yaml` file is a good reference. Most of these config 
 values come from the above **take note**. 
+
 
 Installation
 ------------
@@ -223,6 +229,7 @@ OK
 
 Great job! The script is ready.
 
+
 Running
 -------
 
@@ -231,6 +238,7 @@ Run the script with the following command. Use the `-h` flag for the help messag
 ``` sh
 $ python3 lds_connector.py --config config.yaml
 ```
+
 
 Monitoring
 ----------
@@ -273,10 +281,27 @@ Notice the NXDOMAIN spike. We use Splunk Search to narrow in on the spike and in
 
 ![NXDOMAIN Dashboard Example](/img/splunk_nxdomain_invest.jpg?raw=true)
 
+
+Authors
+=======
+
+This project is developed and maintained by Cam Mackintosh. My email is `cmackint@akamai.com`
+
+
 License
 =======
 
-TODO: Choose a license
+Copyright 2023 Akamai Technologies, Inc. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the
+License. You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an 
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the 
+specific language governing permissions and limitations under the License.
+
 
 References
 ==========
