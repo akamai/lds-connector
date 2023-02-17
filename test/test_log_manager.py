@@ -110,7 +110,8 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(test_data.create_config())
         log_manager.last_log_file = test_data.get_ns_file3()
 
-        log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
         next_log = log_manager._determine_next_log()
 
@@ -126,18 +127,31 @@ class LogManagerTest(unittest.TestCase):
 
         self.assertIsNone(next_log)
 
+    def test_determine_next_log_choose_first_part(self):
+        log_manager = LogManager(test_data.create_config())
+        log_manager.last_log_file = test_data.get_ns_file1()
+
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file1(), test_data.get_ns_file3(), test_data.get_ns_file2()])
+
+        next_log = log_manager._determine_next_log()
+
+        self.assertEqual(next_log, test_data.get_ns_file2())
+
     def test_get_next_log(self):
         config = test_data.create_config()
         config.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
-        log_manager._list = MagicMock(return_value = [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
         log_manager._download = MagicMock(wraps=test_data.download_file)
 
         log_file = log_manager.get_next_log()
 
         expected_log_file = test_data.get_ns_file1()
-        expected_log_file.local_path_txt = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
+        expected_log_file.local_path_txt = \
+            os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
         expected_log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz)
 
         assert log_file is not None
@@ -191,13 +205,15 @@ class LogManagerTest(unittest.TestCase):
         config.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
-        log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
         log_manager._download = MagicMock(wraps=test_data.download_file)
 
         log_file = log_manager.get_next_log()
 
         expected_log_file = test_data.get_ns_file2()
-        expected_log_file.local_path_txt = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
+        expected_log_file.local_path_txt = \
+            os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
         expected_log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz)
 
         assert log_file is not None
@@ -217,13 +233,15 @@ class LogManagerTest(unittest.TestCase):
         config.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
-        log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
         log_manager._download = MagicMock(wraps=test_data.download_file)
 
         log_file = log_manager.get_next_log()
 
         expected_log_file = test_data.get_ns_file1()
-        expected_log_file.local_path_txt = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
+        expected_log_file.local_path_txt = \
+            os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
         expected_log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz)
 
         assert log_file is not None

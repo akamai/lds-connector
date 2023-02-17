@@ -119,7 +119,7 @@ class LogManager:
             logging.debug('No log files in NetStorage')
             return None
 
-        ascending_log_files = sorted(log_files, key=lambda f: f.name_props.start_time)
+        ascending_log_files = sorted(log_files, key=lambda f: (f.name_props.start_time, f.name_props.part))
 
         # No previously processed log file. Pick first available
         if self.last_log_file is None:
