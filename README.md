@@ -184,15 +184,34 @@ Finally, we'll enable the HTTP Event Collector endpoint
 Great job! Splunk is configured.
 
 
-Script
+Connector Script
 ======
 
 
 Configuration
 -------------
 
-The script is configured using a YAML file. The `config_template.yaml` file is a good reference. Most of these config 
-values come from the above **take note**. 
+The script is configured using a YAML file. The `config_template.yaml` file shows what this should look like and
+has a comment description for each field.
+
+Most of these config values come from the above **take note**. See `img/yaml_examples` for where some of these values
+come from in Akamai Control Center / Splunk.
+
+Timestamp Configuration
+-----------------------
+
+The connector script converts each log line to an event and sends it to Splunk HEC. The event must contain the 
+timetamp, otherwise Splunk uses the current time of ingestion for each event. 
+
+How the connector script extracts the timestamp from the log lines is defined by two YAML configuration parameters.
+This allows the connector script to support any LDS format without us having to maintain parsing logic for each. 
+We'll try to provide values for each LDS format, so you don't need to think too much about this. See the
+`timestamp_configs.md` document.
+- The `connector.timestamp_parse` value specifies where the timestamp is in the log line. It's backed by the 
+  [parse](https://pypi.org/project/parse/) package; you can read about the formatting specifics here. The format string 
+  should contain a named field called `timestamp`.
+- The `connector.timestamp_strptime` value specifies how the timestamp is formatted. It's backed by the 
+  [datetime strptime()](https://docs.python.org/3/library/datetime.html) function.
 
 
 Installation
