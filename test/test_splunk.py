@@ -25,6 +25,16 @@ class SplunkTest(unittest.TestCase):
             actual_timestamp = splunk._parse_timestamp(log_line)
             self.assertEqual(actual_timestamp, expected_timestamp)
 
+    def test_parse_timestamp_epoch(self):
+        config = test_data.create_config()
+        config.timestamp_parse = '{} - {timestamp} {}'
+        config.timestamp_strptime = '%s'
+        splunk = Splunk(config)
+
+        for (expected_timestamp, log_line) in SplunkTest._TIMESTAMP_TO_LOG_LINE:
+            actual_timestamp = splunk._parse_timestamp(log_line)
+            self.assertEqual(actual_timestamp, expected_timestamp)
+
     def test_parse_all_logs(self):
         # Test parsing on real log data. Ensure no exceptions are thrown
         config = test_data.create_config()

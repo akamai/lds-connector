@@ -76,6 +76,9 @@ class Splunk:
         timestamp_substr = parse_result['timestamp']
 
         # Convert timestamp substring to UNIX timestamp
-        timestamp_datetime = datetime.strptime(timestamp_substr, self.config.timestamp_strptime)
-        timestamp_datetime = timestamp_datetime.replace(tzinfo=timezone.utc)
-        return timestamp_datetime.timestamp()
+        if self.config.timestamp_strptime == '%s':
+            return float(timestamp_substr)
+        else:
+            timestamp_datetime = datetime.strptime(timestamp_substr, self.config.timestamp_strptime)
+            timestamp_datetime = timestamp_datetime.replace(tzinfo=timezone.utc)
+            return timestamp_datetime.timestamp()
