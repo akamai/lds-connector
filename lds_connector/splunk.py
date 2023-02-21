@@ -81,6 +81,7 @@ class Splunk:
         Returns:
             bool: If events were published, true. Otherwise, false.
         """
+        logging.debug('Publishing events to Splunk')
 
         if len(self.queue) == 0:
             return False
@@ -91,6 +92,7 @@ class Splunk:
         self._publish(self.queue)
 
         self.queue = []
+        logging.debug('Published events to Splunk')
         return True
 
     def clear(self):

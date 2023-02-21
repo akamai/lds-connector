@@ -120,7 +120,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
 
         connector_yaml_config = yaml_config[_KEY_CONNECTOR]
 
-        return Config(
+        config = Config(
             splunk_config=splunk_config,
             netstorage_config=ns_config,
             log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
@@ -128,6 +128,9 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME],
             poll_period_sec=connector_yaml_config.get(_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC, 60)
         )
+
+        logging.info('Parsed configuration from file')
+        return config
     except KeyError as key_error:
         logging.error("Configuration file missing key %s", key_error.args[0])
         return None

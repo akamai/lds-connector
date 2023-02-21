@@ -37,7 +37,6 @@ class Connector:
         """
         Process all available log files
         """
-
         log_file = self.log_manager.get_next_log()
 
         if log_file is None:
@@ -47,6 +46,8 @@ class Connector:
         while log_file is not None:
             self._process_log_file(log_file)
             log_file = self.log_manager.get_next_log()
+
+        logging.info('Finished processing available log files. Waiting until next poll.')
 
     def _process_log_file(self, log_file: LogFile) -> None:
         """
@@ -86,5 +87,5 @@ class Connector:
                 # If multiple log files fail (say Splunk is down), we want to resume at the first failing log file
                 self.log_manager.save_resume_data()
             self.splunk.clear()
-            logging.info('Processed log file %s. Finished processing: %d. Last line processed: %d', \
+            logging.info('Processed log file %s. Finished processing: %s. Last line processed: %d', \
                 log_file.local_path_txt, log_file.processed, log_file.last_processed_line)

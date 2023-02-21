@@ -92,10 +92,14 @@ class LogManager:
         """
         assert self.current_log_file is not None
 
+        logging.debug('Saving resume data: %s', self.current_log_file)
+
         LogManager._ensure_dir_exists(self.config.log_download_dir)
 
         with open(self.resume_path, 'wb') as file:
             pickle.dump(self.current_log_file, file)
+
+        logging.debug('Saved resume data: %s')
 
     def get_next_log(self) -> Optional[LogFile]:
         """
@@ -105,17 +109,20 @@ class LogManager:
         Parameters: None
         Returns:
             Optional[LogFile]: The log file to process next, if any.
-
         """
+        logging.info('Getting next log file')
+
         if self.resume_log_file is not None:
             # First run. Resume log file found
             if self.resume_log_file.processed:
                 # Resume log file was fully processed. Use it as last
+                logging.info('Found resume data. Last log file fully processed. Resuming processing after it.')
                 self.last_log_file = self.resume_log_file
                 self.current_log_file = None
                 self.resume_log_file = None
             elif os.path.isfile(self.resume_log_file.local_path_txt):
                 # Resume log file wasn't fully processed. Use it as current
+                logging.info('Found resume data. Last log file wasn\'t fully processed. Resuming processing it.')
                 self.last_log_file = None
                 self.current_log_file = self.resume_log_file
                 self.resume_log_file = None
@@ -123,7 +130,8 @@ class LogManager:
             else:
                 # Resume log file wasn't fully processed, but log file not found
                 # TODO: Consider attempting to re-download the missing file
-                logging.error('Resume log file was not found [%s}]. Failed resuming', self.resume_log_file.local_path_txt)
+                logging.warning('Found resume data. Log file was missing. Ignoring resume data. [%s]', 
+                    self.resume_log_file.local_path_txt)
                 self.last_log_file = None
                 self.current_log_file = None
                 self.resume_log_file = None
@@ -146,6 +154,8 @@ class LogManager:
 
         self.current_log_file = next_log_file
 
+        logging.info('Got next log file: %s', next_log_file.filename_gz)
+
         return next_log_file
 
     def _determine_next_log(self) -> Optional[LogFile]:
@@ -156,6 +166,8 @@ class LogManager:
         Returns:
             Optional[LogFile]: The log file to process next, if any.
         """
+        logging.debug('Determining next log file')
+
         log_files = self._list()
 
         if len(log_files) == 0:
@@ -166,8 +178,8 @@ class LogManager:
 
         # No previously processed log file. Pick first available
         if self.last_log_file is None:
-            logging.debug('Did not find previously processed log file. Selecting oldest')
-            logging.info('Determined next log file: [%s]', ascending_log_files[0].filename_gz)
+            logging.debug('No previously processed log file. Selecting oldest')
+            logging.debug('Determined next log file: [%s]', ascending_log_files[0].filename_gz)
             return ascending_log_files[0]
 
         logging.debug('Previously processed log file. Selecting oldest after this')
@@ -182,10 +194,10 @@ class LogManager:
                 # Log file's part is before last file's part. Skip it
                 continue
 
-            logging.info('Determined next log file: [{%s}]', log_file.filename_gz)
+            logging.debug('Determined next log file: [%s]', log_file.filename_gz)
             return log_file
 
-        logging.info('No unprocessed log files in NetStorage')
+        logging.debug('No unprocessed log files in NetStorage')
         return None
 
     def _list(self) -> list[LogFile]:
@@ -196,7 +208,7 @@ class LogManager:
         Returns:
             list[LogFile]: The available log files.
         """
-        logging.info('Listing log files from Akamai NetStorage')
+        logging.debug('Fetching available log files list from NetStorage')
 
         ls_path = f'/{self.config.netstorage_config.cp_code}'
         if self.config.netstorage_config.log_dir:
@@ -206,9 +218,9 @@ class LogManager:
         if response is None or response.status_code != 200:
             logging.error('Failed listing NetStorage files. %s', response.reason if response is not None else "")
             return []
-        logging.debug('Finished listing available logs [%s]', response.text)
-
-        return LogManager._parse_list_response(response.text)
+        logs = LogManager._parse_list_response(response.text)
+        logging.debug('Fetched available log files list from NetStorage')
+        return logs
 
     def _download(self, log_file: LogFile) -> None:
         """
@@ -219,7 +231,7 @@ class LogManager:
 
         Returns: None
         """
-        logging.debug('Downloading file [%s]', log_file.filename_gz)
+        logging.debug('Downloading log file from NetStorage: [%s]', log_file.filename_gz)
 
         LogManager._ensure_dir_exists(self.config.log_download_dir)
 
@@ -227,7 +239,7 @@ class LogManager:
         self.netstorage.download(log_file.ns_path_gz, local_path_gz)
         log_file.local_path_gz = local_path_gz
 
-        logging.debug('Finished downloading file [%s]', log_file.filename_gz)
+        logging.debug('Downloaded log file file from NetStorage: [%s]', log_file.filename_gz)
 
     @staticmethod
     def _uncompress(log_file: LogFile) -> None:
@@ -241,7 +253,7 @@ class LogManager:
         """
         local_path_txt = os.path.splitext(log_file.local_path_gz)[0] + ".txt"
 
-        logging.debug('Uncompressing file [%s] to [%s]', log_file.local_path_gz, local_path_txt)
+        logging.debug('Uncompressing log file [%s] to [%s]', log_file.local_path_gz, local_path_txt)
 
         with gzip.open(log_file.local_path_gz, 'rb') as gz_file:
             assert isinstance(gz_file, GzipFile)
@@ -249,7 +261,7 @@ class LogManager:
                 shutil.copyfileobj(gz_file, txt_file)
 
         log_file.local_path_txt = local_path_txt
-        logging.debug('Finished uncompressing file [%s] into [%s]', log_file.local_path_gz, local_path_txt)
+        logging.debug('Finished uncompressing log file')
 
     @staticmethod
     def _delete_gzip(log_file: LogFile) -> None:
@@ -341,5 +353,5 @@ class LogManager:
     @staticmethod
     def _ensure_dir_exists(path: str):
         if not os.path.isdir(path):
-            logging.debug('Creating missing directory: [%s]', path)
+            logging.debug('Creating missing directory: %s', path)
             os.makedirs(path)

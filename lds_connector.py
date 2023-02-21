@@ -33,13 +33,13 @@ def main():
         type=argparse.FileType('r'))
     parser.add_argument('--level',
         help='log level',
-        choices=['DEBUG', 'INFO', 'DEFAULT'],
-        default='DEFAULT'
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+        default='INFO'
     )
     args = parser.parse_args()
 
     # Set log level
-    logging.basicConfig(level=logging.WARNING if args.level == 'DEFAULT' else args.level)
+    logging.basicConfig(level=args.level)
 
     # Parse config from YAML file stream
     config = read_yaml_config(args.config)
