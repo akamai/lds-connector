@@ -304,7 +304,9 @@ Notice the NXDOMAIN spike. We use Splunk Search to narrow in on the spike and in
 Authors
 =======
 
-This project is developed and maintained by Cam Mackintosh. My email is `cmackint@akamai.com`
+This project is maintained by Akamai's Security Technology Group.
+
+The original author is Cam Mackintosh. Her email is `cmackint@akamai.com`
 
 
 License

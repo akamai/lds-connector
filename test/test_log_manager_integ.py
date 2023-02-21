@@ -1,3 +1,6 @@
+# Original author: Cam Mackintosh <cmackint@akamai.com>
+# For more information visit https://developer.akamai.com
+
 # Copyright 2023 Akamai Technologies, Inc. All Rights Reserved
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
