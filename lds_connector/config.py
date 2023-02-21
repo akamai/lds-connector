@@ -80,6 +80,16 @@ _KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = "log_poll_period_sec"
 
 
 def read_yaml_config(yaml_stream) -> Optional[Config]:
+    """
+    Parses configuration from a YAML file
+
+    Parameters:
+        yaml_stream (_ReadStream): YAML file stream
+
+    Returns 
+        Optional[Config]: Config instance. If required value missing, None.
+
+    """
     logging.info('Parsing configuration from YAML file')
 
     yaml_config = yaml.safe_load(yaml_stream)

@@ -28,6 +28,9 @@ from .config import Config
 
 
 class Splunk:
+    """
+    Splunk log line handler. Responsible for converting log lines to Splunk events
+    """
     _HEC_ENDPOINT = '/services/collector/event'
     _TIMEOUT_SEC = 5
 
@@ -40,6 +43,15 @@ class Splunk:
 
 
     def add(self, log_line: str) -> None:
+        """
+        Convert a log line to an HEC event and add it to the queue.
+
+        Parameters:
+            log_line (str): The log line.
+
+        Returns: None
+        """
+
         try:
             timestamp_sec = self._parse_timestamp(log_line)
         except ValueError:
@@ -60,6 +72,16 @@ class Splunk:
         self.queue.append(hec_json)
 
     def publish(self, force=False) -> bool:
+        """
+        Publish queued HEC events to Splunk HEC
+
+        Parameters:
+            force (bool): If true, send queued events. Otherwise, send queued events iff queue size >= batch size.
+
+        Returns:
+            bool: If events were published, true. Otherwise, false.
+        """
+
         if len(self.queue) == 0:
             return False
 
@@ -72,9 +94,23 @@ class Splunk:
         return True
 
     def clear(self):
+        """
+        Clear event queue
+
+        Parameters: None
+        Returns: None
+        """
         self.queue.clear()
 
-    def _publish(self, events):
+    def _publish(self, events) -> None:
+        """
+        Publish events to Splunk HEC. 
+
+        Parameters:
+            events (list[str]): The events to send
+
+        Returns: None
+        """
         protocol = "https://" if self.config.splunk_config.hec_use_ssl else "http://"
         baseurl = f'{protocol}{self.config.splunk_config.host}:{self.config.splunk_config.hec_port}'
         url = urljoin(baseurl, Splunk._HEC_ENDPOINT)
@@ -87,6 +123,15 @@ class Splunk:
             logging.error('Splunk HEC responded with [%s]. Ignoring and moving on', response.status_code)
 
     def _parse_timestamp(self, log_line: str) -> float:
+        """
+        Parse the epoch timestamp in seconds from a log line
+
+        Parameters:
+            log_line (str): The log line to parse 
+
+        Returns:
+            float: The epoch timestamp in seconds
+        """
         # Parse timestamp substring using format string
         parse_result = parse.parse(self.config.timestamp_parse, log_line)
         assert isinstance(parse_result, parse.Result)

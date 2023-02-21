@@ -24,12 +24,20 @@ from .splunk import Splunk
 
 
 class Connector:
+    """
+    Connector script entry-point
+    """
+
     def __init__(self, config: Config):
         self.config = config
         self.log_manager = LogManager(self.config)
         self.splunk = Splunk(self.config)
 
     def run(self):
+        """
+        Process all available log files
+        """
+
         log_file = self.log_manager.get_next_log()
 
         if log_file is None:
@@ -40,7 +48,15 @@ class Connector:
             self._process_log_file(log_file)
             log_file = self.log_manager.get_next_log()
 
-    def _process_log_file(self, log_file: LogFile):
+    def _process_log_file(self, log_file: LogFile) -> None:
+        """
+        Process a single log file
+
+        Parameters:
+            log_file (LogFile): The log file to process
+
+        Returns: None
+        """
         logging.info('Processing log file %s', log_file.local_path_txt)
         try:
             with open(log_file.local_path_txt, 'r', encoding='utf-8') as file:
