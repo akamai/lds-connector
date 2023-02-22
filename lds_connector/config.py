@@ -60,15 +60,15 @@ class AkamaiOpenConfig:
 
 @dataclass
 class AkamaiConfig:
-    ns_config: NetStorageConfig
-    edgedns_config: Optional[EdgeDnsConfig]
-    open_config: Optional[AkamaiOpenConfig]
+    netstorage: NetStorageConfig
+    edgedns: Optional[EdgeDnsConfig]
+    open: Optional[AkamaiOpenConfig]
 
 
 @dataclass
 class Config:
-    splunk_config: SplunkConfig
-    akamai_config: AkamaiConfig
+    splunk: SplunkConfig
+    akamai: AkamaiConfig
     log_download_dir: str
     timestamp_strptime: str
     timestamp_parse: str
@@ -115,8 +115,8 @@ _KEY_CONNECTOR_TIMESTAMP_STRPTIME = "timestamp_strptime"
 _KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = "log_poll_period_sec"
 
 def _is_config_valid(config: Config) -> bool:
-    if config.akamai_config.edgedns_config is not None:
-        if config.akamai_config.edgedns_config.send_records and config.akamai_config.open_config is None:
+    if config.akamai.edgedns is not None:
+        if config.akamai.edgedns.send_records and config.akamai.open is None:
             logging.error('Invalid config. DNS record sending enabled but Akamai OPEN credentials not provided')
             return False
 
@@ -181,11 +181,11 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
         connector_yaml_config = yaml_config[_KEY_CONNECTOR]
 
         config = Config(
-            splunk_config=splunk_config,
-            akamai_config=AkamaiConfig(
-                ns_config=ns_config,
-                edgedns_config=edgedns_config,
-                open_config=open_config),
+            splunk=splunk_config,
+            akamai=AkamaiConfig(
+                netstorage=ns_config,
+                edgedns=edgedns_config,
+                open=open_config),
             log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
             timestamp_parse=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_PARSE],
             timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME],

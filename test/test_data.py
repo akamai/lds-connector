@@ -37,7 +37,7 @@ NS_LIST_RESPONSE = """<?xml version="1.0" encoding="ISO-8859-1"?>
 
 def create_config():
     return Config(
-        splunk_config=SplunkConfig(
+        splunk=SplunkConfig(
             host="127.0.0.1",
             hec_source_type='lds_log_dns',
             hec_index='sandbox',
@@ -46,8 +46,8 @@ def create_config():
             hec_use_ssl=False,
             hec_batch_size=8
         ),
-        akamai_config=AkamaiConfig(
-            ns_config=NetStorageConfig(
+        akamai=AkamaiConfig(
+            netstorage=NetStorageConfig(
                 host="test_ns_host",
                 account="test_ns_account",
                 cp_code=123456,
@@ -55,11 +55,11 @@ def create_config():
                 use_ssl=True,
                 log_dir='logs1'
             ),
-            edgedns_config=EdgeDnsConfig(
+            edgedns=EdgeDnsConfig(
                 send_records=True,
                 zone_name='edgedns.zone'
             ),
-            open_config=AkamaiOpenConfig(
+            open=AkamaiOpenConfig(
                 client_secret='test_client_secret',
                 host='test_host',
                 access_token='test_access_token',

@@ -34,12 +34,12 @@ class ConfigTest(unittest.TestCase):
 
     def test_read_yaml_missing_optional(self):
         expected_config = test_data.create_config()
-        expected_config.splunk_config.hec_index = None
-        expected_config.splunk_config.hec_source_type = None
-        expected_config.splunk_config.hec_batch_size = 10
+        expected_config.splunk.hec_index = None
+        expected_config.splunk.hec_source_type = None
+        expected_config.splunk.hec_batch_size = 10
         expected_config.poll_period_sec = 60
-        expected_config.akamai_config.edgedns_config = None
-        expected_config.akamai_config.open_config = None
+        expected_config.akamai.edgedns = None
+        expected_config.akamai.open = None
 
         config_filename = path.join(test_data.DATA_DIR, 'test_config2.yaml')
         with open(config_filename, 'r', encoding='utf-8') as config_file:
@@ -48,8 +48,8 @@ class ConfigTest(unittest.TestCase):
 
     def test_read_yaml_missing_nested_optional(self):
         expected_config = test_data.create_config()
-        assert expected_config.akamai_config.open_config is not None
-        expected_config.akamai_config.open_config.account_switch_key = None
+        assert expected_config.akamai.open is not None
+        expected_config.akamai.open.account_switch_key = None
 
         config_filename = path.join(test_data.DATA_DIR, 'test_config3.yaml')
         with open(config_filename, 'r', encoding='utf-8') as config_file:
