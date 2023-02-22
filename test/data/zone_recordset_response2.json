@@ -1,0 +1,222 @@
+{
+    "metadata": {
+        "showAll": false,
+        "lastPage": 2,
+        "pageSize": 25,
+        "page": 1,
+        "totalElements": 31
+    },
+    "recordsets": [
+        {
+            "name": "edgedns.zone",
+            "type": "CAA",
+            "ttl": 300,
+            "rdata": [
+                "0 issue \"ca.sectigo.com\"",
+                "0 issue \"ca.digicert.com\""
+            ]
+        },
+        {
+            "name": "edgedns.zone",
+            "type": "HTTPS",
+            "ttl": 300,
+            "rdata": [
+                "0 pool.edgedns.zone.",
+                "0 pool.jdgri.me."
+            ]
+        },
+        {
+            "name": "edgedns.zone",
+            "type": "SOA",
+            "ttl": 86400,
+            "rdata": [
+                "a1-247.akam.net. hostmaster.edgedns.zone. 2019102601 3600 600 604800 300"
+            ]
+        },
+        {
+            "name": "edgedns.zone",
+            "type": "NS",
+            "ttl": 86400,
+            "rdata": [
+                "a24-65.akam.net.",
+                "a11-66.akam.net.",
+                "a1-247.akam.net.",
+                "a22-64.akam.net.",
+                "a28-66.akam.net.",
+                "a13-67.akam.net."
+            ]
+        },
+        {
+            "name": "adp-poc.edgedns.zone",
+            "type": "CNAME",
+            "ttl": 300,
+            "rdata": [
+                "adp-poc.edgedns.zone.akadns.net."
+            ]
+        },
+        {
+            "name": "akamaicdn.edgedns.zone",
+            "type": "AKAMAICDN",
+            "ttl": 20,
+            "rdata": [
+                "1.shard.bcarstea.akamaiumedia.com.edgesuite.net"
+            ]
+        },
+        {
+            "name": "cloud2.edgedns.zone",
+            "type": "NS",
+            "ttl": 300,
+            "rdata": [
+                "dns1.p03.nsone.net.",
+                "dns2.p03.nsone.net.",
+                "dns3.p03.nsone.net.",
+                "dns4.p03.nsone.net."
+            ]
+        },
+        {
+            "name": "cloud3.edgedns.zone",
+            "type": "NS",
+            "ttl": 300,
+            "rdata": [
+                "dns1.p06.nsone.net.",
+                "dns2.p06.nsone.net.",
+                "dns3.p06.nsone.net.",
+                "dns4.p06.nsone.net."
+            ]
+        },
+        {
+            "name": "cname-prefixnginx.edgedns.zone",
+            "type": "TXT",
+            "ttl": 600,
+            "rdata": [
+                "\"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/nginx\""
+            ]
+        },
+        {
+            "name": "demotxt.edgedns.zone",
+            "type": "TXT",
+            "ttl": 1,
+            "rdata": [
+                "\"0123456789a\"",
+                "\"0123456789b\"",
+                "\"0123456789c\""
+            ]
+        },
+        {
+            "name": "h3pool.edgedns.zone",
+            "type": "AAAA",
+            "ttl": 300,
+            "rdata": [
+                "2001:db8:0:0:0:0:0:3"
+            ]
+        },
+        {
+            "name": "h3pool.edgedns.zone",
+            "type": "A",
+            "ttl": 0,
+            "rdata": [
+                "192.0.2.3"
+            ]
+        },
+        {
+            "name": "https.edgedns.zone",
+            "type": "HTTPS",
+            "ttl": 300,
+            "rdata": [
+                "0 edgedns.zone.edgekey.net."
+            ]
+        },
+        {
+            "name": "jdgnginx.edgedns.zone",
+            "type": "TXT",
+            "ttl": 600,
+            "rdata": [
+                "\"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/nginx\""
+            ]
+        },
+        {
+            "name": "learn.edgedns.zone",
+            "type": "TXT",
+            "ttl": 300,
+            "rdata": [
+                "\"Measure\" \"time\" \"from\" \"Pending\" \"to\" \"Active\" \"state\" \"change.\""
+            ]
+        },
+        {
+            "name": "mf.edgedns.zone",
+            "type": "CNAME",
+            "ttl": 300,
+            "rdata": [
+                "mirror-failover.edgedns.zone."
+            ]
+        },
+        {
+            "name": "mirror-failover.edgedns.zone",
+            "type": "NS",
+            "ttl": 300,
+            "rdata": [
+                "a7-131.akadns.net.",
+                "a1-128.akadns.net."
+            ]
+        },
+        {
+            "name": "ordertest.edgedns.zone",
+            "type": "A",
+            "ttl": 1800,
+            "rdata": [
+                "54.183.133.73",
+                "54.82.116.137"
+            ]
+        },
+        {
+            "name": "origin-ww2.edgedns.zone",
+            "type": "A",
+            "ttl": 300,
+            "rdata": [
+                "3.85.192.36"
+            ]
+        },
+        {
+            "name": "pool.edgedns.zone",
+            "type": "AAAA",
+            "ttl": 300,
+            "rdata": [
+                "2001:db8:0:0:0:0:0:2"
+            ]
+        },
+        {
+            "name": "pool.edgedns.zone",
+            "type": "A",
+            "ttl": 300,
+            "rdata": [
+                "192.0.2.2"
+            ]
+        },
+        {
+            "name": "pool.edgedns.zone",
+            "type": "HTTPS",
+            "ttl": 300,
+            "rdata": [
+                "1 . alpn=h2",
+                "1 h3pool. alpn=h2,h3"
+            ]
+        },
+        {
+            "name": "ssl-cleverreach.edgedns.zone",
+            "type": "CNAME",
+            "ttl": 300,
+            "rdata": [
+                "ssl.cleverreach.com."
+            ]
+        },
+        {
+            "name": "subdomain.edgedns.zone",
+            "type": "NS",
+            "ttl": 300,
+            "rdata": [
+                "a1-247.akam.net.",
+                "a11-66.akam.net."
+            ]
+        }
+    ]
+}

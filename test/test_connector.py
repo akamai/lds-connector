@@ -44,6 +44,8 @@ class ConnectorTest(unittest.TestCase):
 
     def test_run_single_log(self):
         config = test_data.create_config()
+        assert config.akamai.edgedns is not None
+        config.akamai.edgedns.send_records = False
         connector = Connector(config)
 
         log_file = test_data.get_ns_file1()
@@ -63,9 +65,10 @@ class ConnectorTest(unittest.TestCase):
         connector.splunk._publish.assert_called()
         # TODO: Assert call count
 
-
     def test_run_multiple_logs(self):
         config = test_data.create_config()
+        assert config.akamai.edgedns is not None
+        config.akamai.edgedns.send_records = False
         connector = Connector(config)
 
         log_file1 = test_data.get_ns_file1()
@@ -95,6 +98,8 @@ class ConnectorTest(unittest.TestCase):
 
     def test_run_no_logs(self):
         config = test_data.create_config()
+        assert config.akamai.edgedns is not None
+        config.akamai.edgedns.send_records = False
         connector = Connector(config)
 
         connector.log_manager.get_next_log = MagicMock(return_value=None)
@@ -108,6 +113,8 @@ class ConnectorTest(unittest.TestCase):
 
     def test_run_unexpected_error(self):
         config = test_data.create_config()
+        assert config.akamai.edgedns is not None
+        config.akamai.edgedns.send_records = False
         connector = Connector(config)
 
         log_file1 = test_data.get_ns_file1()
@@ -142,6 +149,8 @@ class ConnectorTest(unittest.TestCase):
         total_lines = 15
 
         config = test_data.create_config()
+        assert config.akamai.edgedns is not None
+        config.akamai.edgedns.send_records = False
         connector = Connector(config)
 
         log_file = test_data.get_ns_file1()
@@ -161,6 +170,19 @@ class ConnectorTest(unittest.TestCase):
         connector.log_manager.save_resume_data.assert_called_once()
         connector.splunk._publish.assert_called()
         self.assertEqual(connector.splunk._publish.call_count, 1)
+
+    def test_process_dns_records(self):
+        config = test_data.create_config()
+        connector = Connector(config)
+
+        connector.log_manager.get_next_log = MagicMock(return_value=None)
+        connector.splunk._publish = MagicMock()
+        assert connector.edgedns is not None
+        connector.edgedns.get_records = MagicMock(return_value=[test_data.create_dns_record1, test_data.create_dns_record2])
+
+        connector.run()
+
+        self.assertTrue(connector.edgedns.get_records.assert_called_once)
 
 
 if __name__ == '__main__':

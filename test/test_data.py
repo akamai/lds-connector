@@ -18,9 +18,11 @@
 import os
 from os import path
 import shutil
+import json
 
 from lds_connector.config import *
 from lds_connector.log_manager import LogFile, LogNameProps, LogManager
+from lds_connector.edgedns_manager import DnsRecord
 
 
 DATA_DIR = path.join(path.dirname(__file__), 'data')
@@ -138,7 +140,44 @@ def get_ns_file3():
         processed=False,
         last_processed_line=-1
     )
-    
+
+
+def create_dns_record1():
+    return DnsRecord(
+        name='edgedns.zone',
+        type='CAA',
+        ttl=300,
+        rdata=['0 issue \"ca.sectigo.com\"', '0 issue \"ca.digicert.com\"']
+    )
+
+
+def create_dns_record2():
+    return DnsRecord(
+        name='edgedns.zone',
+        type='SOA',
+        ttl=86400,
+        rdata=['a1-247.akam.net. hostmaster.edgedns.zone. 2019102601 3600 600 604800 300']
+    )
+
+
+def create_dns_record3():
+    return DnsRecord(
+        name='cam.edgedns.zone',
+        type='A',
+        ttl=300,
+        rdata=['192.0.2.2']
+    )
+
+
+def read_json(filename: str):
+    json_path = path.join(path.dirname(__file__), 'data/', filename)
+    json_data = {}
+    with open(json_path, 'r', encoding='utf-8') as json_file:
+        json_data = json.load(json_file)
+
+    return json_data
+
+
 def download_file(log_file: LogFile):
     """
     Mock method of downloading a file
@@ -152,6 +191,7 @@ def download_file(log_file: LogFile):
     shutil.copyfile(source_path, dest_path)
 
     log_file.local_path_gz = dest_path
+
 
 def download_uncompress_file(log_file: LogFile):
     download_file(log_file)

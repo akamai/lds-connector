@@ -1,0 +1,28 @@
+{
+    "metadata": {
+        "showAll": false,
+        "lastPage": 2,
+        "pageSize": 2,
+        "page": 1,
+        "totalElements": 3
+    },
+    "recordsets": [
+        {
+            "name": "edgedns.zone",
+            "type": "CAA",
+            "ttl": 300,
+            "rdata": [
+                "0 issue \"ca.sectigo.com\"",
+                "0 issue \"ca.digicert.com\""
+            ]
+        },
+        {
+            "name": "edgedns.zone",
+            "type": "SOA",
+            "ttl": 86400,
+            "rdata": [
+                "a1-247.akam.net. hostmaster.edgedns.zone. 2019102601 3600 600 604800 300"
+            ]
+        }
+    ]
+}

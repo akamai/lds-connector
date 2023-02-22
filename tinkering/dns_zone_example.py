@@ -18,6 +18,7 @@
 import argparse
 import requests
 import yaml
+import json
 from akamai.edgegrid import EdgeGridAuth
 
 KEY_AKAMAI = 'akamai'
@@ -28,7 +29,7 @@ KEY_OPEN_ACCESS_TOKEN = 'access_token'
 KEY_OPEN_CLIENT_TOKEN = 'client_token'
 KEY_OPEN_ACCOUNT_SWITCH = 'account_switch_key'
 KEY_EDGEDNS = 'edgedns'
-KEY_EDGEDNS_ZONE = 'zone'
+KEY_EDGEDNS_ZONE = 'zone_name'
 
 def main():
     parser = argparse.ArgumentParser(
@@ -60,38 +61,38 @@ def main():
     )
 
 
-    print('Fetching zone settings')
-    url = f'https://{open_host}/config-dns/v2/zones/{edgedns_zone}'
-    query_params = {'accountSwitchKey': open_account_switch_key}
-    result = open_session.get(url=url, params=query_params)
-    print('Result code ', result.status_code)
-    print('Result: ', result.json())
-    print()
+    # print('Fetching zone settings')
+    # url = f'https://{open_host}/config-dns/v2/zones/{edgedns_zone}'
+    # query_params = {'accountSwitchKey': open_account_switch_key}
+    # result = open_session.get(url=url, params=query_params)
+    # print('Result code ', result.status_code)
+    # print('Result: ', result.json())
+    # print()
 
-    print('Fetching available names in zone')
-    url = f'https://{open_host}/config-dns/v2/zones/{edgedns_zone}/names'
-    query_params = {'accountSwitchKey': open_account_switch_key}
-    result = open_session.get(url=url, params=query_params)
-    names_json = result.json()
-    print('Result code ', result.status_code)
-    print('Result: ', names_json)
-    print()
+    # print('Fetching available names in zone')
+    # url = f'https://{open_host}/config-dns/v2/zones/{edgedns_zone}/names'
+    # query_params = {'accountSwitchKey': open_account_switch_key}
+    # result = open_session.get(url=url, params=query_params)
+    # names_json = result.json()
+    # print('Result code ', result.status_code)
+    # print('Result: ', names_json)
+    # print()
 
-    print('Fetching master zone file')
-    url = f'https://{open_host}/config-dns/v2/zones/{edgedns_zone}/zone-file'
-    query_params = {'accountSwitchKey': open_account_switch_key}
-    headers = {'Accept': 'text/dns'}
-    result = open_session.get(url=url, params=query_params, headers=headers)
-    print('Result code ', result.status_code)
-    print('Result: ', result.text)
-    print()
+    # print('Fetching master zone file')
+    # url = f'https://{open_host}/config-dns/v2/zones/{edgedns_zone}/zone-file'
+    # query_params = {'accountSwitchKey': open_account_switch_key}
+    # headers = {'Accept': 'text/dns'}
+    # result = open_session.get(url=url, params=query_params, headers=headers)
+    # print('Result code ', result.status_code)
+    # print('Result: ', result.text)
+    # print()
 
     print('Fetching zone resource records')
     url = f'https://{open_host}/config-dns/v2/zones/{edgedns_zone}/recordsets'
     query_params = {'accountSwitchKey': open_account_switch_key}
     result = open_session.get(url=url, params=query_params)
     print('Result code ', result.status_code)
-    print('Result: ', result.json())
+    print('Result: ', json.dumps(result.json(), indent=4))
     print()
 
     print('Fetching any remaining zone resource records...')
@@ -104,7 +105,7 @@ def main():
         query_params = {'accountSwitchKey': open_account_switch_key, 'page': next_page}
         result = open_session.get(url=url, params=query_params)
         print('Result code ', result.status_code)
-        print('Result: ', result.json())
+        print('Result: ', json.dumps(result.json(), indent=4))
         print()
 
 

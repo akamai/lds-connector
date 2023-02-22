@@ -17,10 +17,12 @@
 
 import logging
 import os
+from typing import Optional
 
 from .config import Config
 from .log_manager import LogManager, LogFile
 from .splunk import Splunk
+from .edgedns_manager import EdgeDnsManager, create_edgedns_manager
 
 
 class Connector:
@@ -30,24 +32,50 @@ class Connector:
 
     def __init__(self, config: Config):
         self.config = config
-        self.log_manager = LogManager(self.config)
-        self.splunk = Splunk(self.config)
+        self.log_manager: LogManager = LogManager(config)
+        self.splunk: Splunk = Splunk(config)
+        self.edgedns: Optional[EdgeDnsManager] = create_edgedns_manager(config)
 
     def run(self):
         """
+        Process all available data
+        """
+        self._process_log_files()
+
+        self._process_dns_records()
+
+    def _process_dns_records(self) -> None:
+        """
+        Process available DNS records
+        """
+        if self.edgedns is None:
+            return
+
+        logging.info('Processing DNS records')
+
+        self.edgedns.get_records()
+
+        # TODO: process records
+        
+        logging.info('Processed DNS records')
+
+    def _process_log_files(self) -> None:
+        """
         Process all available log files
         """
+        logging.info('Processing any available log files')
+
         log_file = self.log_manager.get_next_log()
 
         if log_file is None:
-            logging.info('No log files to process')
+            logging.info('No available log files')
             return
 
         while log_file is not None:
             self._process_log_file(log_file)
             log_file = self.log_manager.get_next_log()
 
-        logging.info('Finished processing available log files. Waiting until next poll.')
+        logging.info('Finished processing any available log files')
 
     def _process_log_file(self, log_file: LogFile) -> None:
         """
