@@ -238,7 +238,7 @@ Optionally, run the unit tests. Make sure the last line says `OK` and not `FAILE
 line; these are intentionally omitted during unit tests.
 
 ```sh
-splunk-lds-connector % python3 -m unittest discover
+splunk-lds-connector % python3 -m unittest discover -vb
 ... Test output
 ----------------------------------------------------------------------
 Ran 21 tests in 0.018s
