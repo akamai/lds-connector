@@ -26,7 +26,6 @@ akamai :
     host : 'test_host'
     access_token : 'test_access_token'
     client_token : 'test_client_token'
-    account_switch_key : 'test_account_switch_key'
 
 connector :
   log_download_dir : "logs2"

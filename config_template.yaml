@@ -16,7 +16,16 @@ akamai :
     cp_code : ""            # Upload directory's CP code
     key : ""                # HTTP CMS API key
     use_ssl : false         # Use SSL for NetStorage API
-    log_dir : 'logs'        # Log directory path.
+    log_dir : 'logs'        # Log directory path
+  edgedns : # Optional
+    send_records : true       # Sould fetch and send zone's resource records 
+    zone_name : 'example.com' # Zone to send records for
+  open : # Optional
+    client_secret : ''      # Client secret
+    host : ''               # Host
+    access_token : ''       # Access token
+    client_token : ''       # Client token
+    account_switch_key : '' # Optional. Account switch key
 
 connector :
   log_download_dir : 'tmp/'                   # Local log download directory

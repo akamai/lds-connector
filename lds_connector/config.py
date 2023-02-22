@@ -44,9 +44,31 @@ class NetStorageConfig:
 
 
 @dataclass
+class EdgeDnsConfig:
+    send_records: bool
+    zone_name: str
+
+
+@dataclass
+class AkamaiOpenConfig:
+    client_secret: str
+    host : str
+    access_token : str
+    client_token : str
+    account_switch_key : Optional[str]
+
+
+@dataclass
+class AkamaiConfig:
+    ns_config: NetStorageConfig
+    edgedns_config: Optional[EdgeDnsConfig]
+    open_config: Optional[AkamaiOpenConfig]
+
+
+@dataclass
 class Config:
     splunk_config: SplunkConfig
-    netstorage_config: NetStorageConfig
+    akamai_config: AkamaiConfig
     log_download_dir: str
     timestamp_strptime: str
     timestamp_parse: str
@@ -54,6 +76,7 @@ class Config:
 
 
 _KEY_AKAMAI = "akamai"
+
 _KEY_NS = "netstorage"
 _KEY_NS_HOST = "host"
 _KEY_NS_ACCOUNT = "upload_account"
@@ -61,6 +84,18 @@ _KEY_NS_CP_CODE = "cp_code"
 _KEY_NS_KEY = "key"
 _KEY_NS_SSL = "use_ssl"
 _KEY_NS_LOG_DIR = "log_dir"
+
+_KEY_EDGEDNS = "edgedns"
+_KEY_EDGEDNS_ZONE = "zone_name"
+_KEY_EDGEDNS_SEND_RECORDS = "send_records"
+
+_KEY_OPEN = "open"
+_KEY_OPEN_CLIENT_SECRET = "client_secret"
+_KEY_OPEN_HOST = "host"
+_KEY_OPEN_ACCESS_TOKEN = "access_token"
+_KEY_OPEN_CLIENT_TOKEN = "client_token"
+_KEY_OPEN_ACCOUNT_SWITCH_KEY = "account_switch_key"
+
 
 _KEY_SPLUNK = "splunk"
 _KEY_SPLUNK_HOST = "host"
@@ -72,11 +107,20 @@ _KEY_SPLUNK_HEC_SOURCE_TYPE = "source_type"
 _KEY_SPLUNK_HEC_INDEX = "index"
 _KEY_SPLUNK_HEC_BATCH_SIZE = "batch_size"
 
+
 _KEY_CONNECTOR = "connector"
 _KEY_CONNECTOR_LOG_DIR = "log_download_dir"
 _KEY_CONNECTOR_TIMESTAMP_PARSE = "timestamp_parse"
 _KEY_CONNECTOR_TIMESTAMP_STRPTIME = "timestamp_strptime"
 _KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = "log_poll_period_sec"
+
+def _is_config_valid(config: Config) -> bool:
+    if config.akamai_config.edgedns_config is not None:
+        if config.akamai_config.edgedns_config.send_records and config.akamai_config.open_config is None:
+            logging.error('Invalid config. DNS record sending enabled but Akamai OPEN credentials not provided')
+            return False
+
+    return True
 
 
 def read_yaml_config(yaml_stream) -> Optional[Config]:
@@ -96,7 +140,6 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
 
     try:
         ns_yaml_config = yaml_config[_KEY_AKAMAI][_KEY_NS]
-
         ns_config = NetStorageConfig(
             host=ns_yaml_config[_KEY_NS_HOST],
             account=ns_yaml_config[_KEY_NS_ACCOUNT],
@@ -105,6 +148,23 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             use_ssl=ns_yaml_config[_KEY_NS_SSL],
             log_dir=ns_yaml_config[_KEY_NS_LOG_DIR]
         )
+        edgedns_yaml_config = yaml_config[_KEY_AKAMAI].get(_KEY_EDGEDNS, None)
+        edgedns_config = None
+        if edgedns_yaml_config is not None:
+            edgedns_config = EdgeDnsConfig(
+                send_records=edgedns_yaml_config[_KEY_EDGEDNS_SEND_RECORDS],
+                zone_name=edgedns_yaml_config[_KEY_EDGEDNS_ZONE]
+            )
+        open_yaml_config = yaml_config[_KEY_AKAMAI].get(_KEY_OPEN, None)
+        open_config = None
+        if open_yaml_config is not None:
+            open_config = AkamaiOpenConfig(
+                client_secret=open_yaml_config[_KEY_OPEN_CLIENT_SECRET],
+                host=open_yaml_config[_KEY_OPEN_HOST],
+                access_token=open_yaml_config[_KEY_OPEN_ACCESS_TOKEN],
+                client_token=open_yaml_config[_KEY_OPEN_CLIENT_TOKEN],
+                account_switch_key=open_yaml_config.get(_KEY_OPEN_ACCOUNT_SWITCH_KEY, None)
+            )
 
         splunk_yaml_config = yaml_config[_KEY_SPLUNK]
         splunk_hec_yaml_config = splunk_yaml_config[_KEY_SPLUNK_HEC]
@@ -122,12 +182,18 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
 
         config = Config(
             splunk_config=splunk_config,
-            netstorage_config=ns_config,
+            akamai_config=AkamaiConfig(
+                ns_config=ns_config,
+                edgedns_config=edgedns_config,
+                open_config=open_config),
             log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
             timestamp_parse=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_PARSE],
             timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME],
             poll_period_sec=connector_yaml_config.get(_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC, 60)
         )
+
+        if not _is_config_valid(config):
+            return None
 
         logging.info('Parsed configuration from file')
         return config

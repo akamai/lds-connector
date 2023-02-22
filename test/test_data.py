@@ -19,7 +19,7 @@ import os
 from os import path
 import shutil
 
-from lds_connector.config import Config, SplunkConfig, NetStorageConfig
+from lds_connector.config import *
 from lds_connector.log_manager import LogFile, LogNameProps, LogManager
 
 
@@ -46,13 +46,26 @@ def create_config():
             hec_use_ssl=False,
             hec_batch_size=8
         ),
-        netstorage_config=NetStorageConfig(
-            host="test_ns_host",
-            account="test_ns_account",
-            cp_code=123456,
-            key="test_key",
-            use_ssl=True,
-            log_dir='logs1'
+        akamai_config=AkamaiConfig(
+            ns_config=NetStorageConfig(
+                host="test_ns_host",
+                account="test_ns_account",
+                cp_code=123456,
+                key="test_key",
+                use_ssl=True,
+                log_dir='logs1'
+            ),
+            edgedns_config=EdgeDnsConfig(
+                send_records=True,
+                zone_name='edgedns.zone'
+            ),
+            open_config=AkamaiOpenConfig(
+                client_secret='test_client_secret',
+                host='test_host',
+                access_token='test_access_token',
+                client_token='test_client_token',
+                account_switch_key='test_account_switch_key'
+            )
         ),
         log_download_dir=os.path.abspath('logs2'),
         timestamp_parse='{} - {} {timestamp},{}',
