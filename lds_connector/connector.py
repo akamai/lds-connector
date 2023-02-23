@@ -36,15 +36,7 @@ class Connector:
         self.splunk: Splunk = Splunk(config)
         self.edgedns: Optional[EdgeDnsManager] = create_edgedns_manager(config)
 
-    def run(self):
-        """
-        Process all available data
-        """
-        self._process_log_files()
-
-        self._process_dns_records()
-
-    def _process_dns_records(self) -> None:
+    def process_dns_records(self) -> None:
         """
         Process available DNS records
         """
@@ -53,13 +45,18 @@ class Connector:
 
         logging.info('Processing DNS records')
 
-        self.edgedns.get_records()
+        records = self.edgedns.get_records()
+        # TODO: get_records should return records page-by-page
 
-        # TODO: process records
-        
+        for record in records:
+            self.splunk.add_dns_record(record)
+            self.splunk.publish_dns_records()
+
+        self.splunk.publish_dns_records(force=True)
+
         logging.info('Processed DNS records')
 
-    def _process_log_files(self) -> None:
+    def process_log_files(self) -> None:
         """
         Process all available log files
         """

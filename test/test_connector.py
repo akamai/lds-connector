@@ -55,7 +55,7 @@ class ConnectorTest(unittest.TestCase):
         connector.log_manager.save_resume_data = MagicMock()
         connector.splunk._post = MagicMock()
 
-        connector.run()
+        connector.process_log_files()
 
         self.assertTrue(log_file.processed)
         self.assertEqual(log_file.last_processed_line, 15)
@@ -81,7 +81,7 @@ class ConnectorTest(unittest.TestCase):
         connector.log_manager.save_resume_data = MagicMock()
         connector.splunk._post = MagicMock()
 
-        connector.run()
+        connector.process_log_files()
 
         self.assertTrue(log_file1.processed)
         self.assertEqual(log_file1.last_processed_line, 15)
@@ -106,7 +106,7 @@ class ConnectorTest(unittest.TestCase):
         connector.log_manager.save_resume_data = MagicMock()
         connector.splunk._post = MagicMock()
 
-        connector.run()
+        connector.process_log_files()
 
         connector.log_manager.save_resume_data.assert_not_called()
         connector.splunk._post.assert_not_called()
@@ -128,7 +128,7 @@ class ConnectorTest(unittest.TestCase):
         connector.splunk._post = MagicMock(
             side_effect=itertools.chain([None, ConnectionError()], itertools.repeat(None)))
 
-        connector.run()
+        connector.process_log_files()
 
         self.assertFalse(log_file1.processed)
         self.assertEqual(log_file1.last_processed_line, 8)
@@ -161,7 +161,7 @@ class ConnectorTest(unittest.TestCase):
         connector.log_manager.save_resume_data = MagicMock()
         connector.splunk._post = MagicMock()
 
-        connector.run()
+        connector.process_log_files()
 
         self.assertTrue(log_file.processed)
         self.assertEqual(log_file.last_processed_line, total_lines)
@@ -180,7 +180,7 @@ class ConnectorTest(unittest.TestCase):
         assert connector.edgedns is not None
         connector.edgedns.get_records = MagicMock(return_value=[test_data.create_dns_record1, test_data.create_dns_record2])
 
-        connector.run()
+        connector.process_log_files()
 
         self.assertTrue(connector.edgedns.get_records.assert_called_once)
 
