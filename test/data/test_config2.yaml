@@ -1,11 +1,13 @@
 ---
 
+# Optional paremeters are not set
+
 splunk :
   host : "127.0.0.1"
-  hec :
-    port : 8088
-    token : "test_hec_token"
-    use_ssl : false
+  hec_port : 8088
+  hec_use_ssl : false
+  lds_hec :
+    token : "test_lds_hec_token"
 
 akamai :
   netstorage : 

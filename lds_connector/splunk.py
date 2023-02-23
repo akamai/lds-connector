@@ -64,10 +64,10 @@ class Splunk:
             'source': 'splunk-lds-connector',
             'event': log_line
         }
-        if self.config.splunk.hec_source_type:
-            hec_json['sourcetype'] = self.config.splunk.hec_source_type
-        if self.config.splunk.hec_index:
-            hec_json['index'] = self.config.splunk.hec_index
+        if self.config.splunk.lds_hec.source_type:
+            hec_json['sourcetype'] = self.config.splunk.lds_hec.source_type
+        if self.config.splunk.lds_hec.index:
+            hec_json['index'] = self.config.splunk.lds_hec.index
 
         self.queue.append(hec_json)
 
@@ -86,7 +86,7 @@ class Splunk:
         if len(self.queue) == 0:
             return False
 
-        if len(self.queue) < self.config.splunk.hec_batch_size and not force:
+        if len(self.queue) < self.config.splunk.lds_hec.event_batch_size and not force:
             return False
 
         self._publish(self.queue)
@@ -116,7 +116,7 @@ class Splunk:
         protocol = "https://" if self.config.splunk.hec_use_ssl else "http://"
         baseurl = f'{protocol}{self.config.splunk.host}:{self.config.splunk.hec_port}'
         url = urljoin(baseurl, Splunk._HEC_ENDPOINT)
-        headers = {"Authorization": "Splunk " + self.config.splunk.hec_token}
+        headers = {"Authorization": "Splunk " + self.config.splunk.lds_hec.token}
 
         events_json = '\n'.join([json.dumps(event) for event in events])
 

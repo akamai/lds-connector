@@ -34,9 +34,10 @@ class ConfigTest(unittest.TestCase):
 
     def test_read_yaml_missing_optional(self):
         expected_config = test_data.create_config()
-        expected_config.splunk.hec_index = None
-        expected_config.splunk.hec_source_type = None
-        expected_config.splunk.hec_batch_size = 10
+        expected_config.splunk.lds_hec.index = None
+        expected_config.splunk.lds_hec.source_type = None
+        expected_config.splunk.lds_hec.event_batch_size = 10
+        expected_config.splunk.edgedns_hec = None
         expected_config.poll_period_sec = 60
         expected_config.akamai.edgedns = None
         expected_config.akamai.open = None
@@ -58,6 +59,12 @@ class ConfigTest(unittest.TestCase):
 
     def test_read_yaml_edgedns_records_requires_open(self):
         config_filename = path.join(test_data.DATA_DIR, 'test_config4.yaml')
+        with open(config_filename, 'r', encoding='utf-8') as config_file:
+            config = read_yaml_config(config_file)
+            self.assertIsNone(config)
+
+    def test_read_yaml_edgedns_records_requires_token(self):
+        config_filename = path.join(test_data.DATA_DIR, 'test_config5.yaml')
         with open(config_filename, 'r', encoding='utf-8') as config_file:
             config = read_yaml_config(config_file)
             self.assertIsNone(config)

@@ -1,21 +1,28 @@
 ---
 
+# All parameters are set
+
 splunk :
-  host : "127.0.0.1"
-  hec :
-    source_type: "lds_log_dns"
-    index: "sandbox"
-    port : 8088
-    token : "test_hec_token"
-    use_ssl : false
+  host : '127.0.0.1'
+  hec_port : 8088
+  hec_use_ssl : false
+  lds_hec :
+    source_type: 'lds_log_dns'
+    index: 'sandbox'
+    token : 'test_lds_hec_token'
     batch_size : 8
+  edgedns_hec :
+    source_type: 'edgedns_record'
+    index: 'sandbox'
+    token : 'test_edgedns_hec_token'
+    batch_size : 10
 
 akamai :
   netstorage : 
-    host : "test_ns_host"
-    upload_account : "test_ns_account"
+    host : 'test_ns_host'
+    upload_account : 'test_ns_account'
     cp_code : 123456
-    key : "test_key"
+    key : 'test_key'
     use_ssl : true
     log_dir : 'logs1'
   edgedns :
@@ -29,7 +36,7 @@ akamai :
     account_switch_key : 'test_account_switch_key'
 
 connector :
-  log_download_dir : "logs2"
-  timestamp_parse: "{} - {} {timestamp},{}"
-  timestamp_strptime: "%d/%m/%Y %H:%M:%S"
+  log_download_dir : 'logs2'
+  timestamp_parse: '{} - {} {timestamp},{}'
+  timestamp_strptime: '%d/%m/%Y %H:%M:%S'
   log_poll_period_sec: 60

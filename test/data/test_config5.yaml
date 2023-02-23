@@ -1,9 +1,6 @@
 ---
 
-# Nested optional parameters aren't set
-
-# Current list of nested optionals
-# - akamai.open.accountSwitchKey
+# splunk.edgedns_hec not set, but akamai.edgedns.send_records is true
 
 splunk :
   host : "127.0.0.1"
@@ -14,11 +11,6 @@ splunk :
     index: 'sandbox'
     token : 'test_lds_hec_token'
     batch_size : 8
-  edgedns_hec :
-    source_type: 'edgedns_record'
-    index: 'sandbox'
-    token : 'test_edgedns_hec_token'
-    batch_size : 10
 
 akamai :
   netstorage : 
@@ -36,6 +28,7 @@ akamai :
     host : 'test_host'
     access_token : 'test_access_token'
     client_token : 'test_client_token'
+    account_switch_key : 'test_account_switch_key'
 
 connector :
   log_download_dir : "logs2"

@@ -41,12 +41,20 @@ def create_config():
     return Config(
         splunk=SplunkConfig(
             host="127.0.0.1",
-            hec_source_type='lds_log_dns',
-            hec_index='sandbox',
             hec_port=8088,
-            hec_token="test_hec_token",
             hec_use_ssl=False,
-            hec_batch_size=8
+            lds_hec=HecConfig(
+                source_type='lds_log_dns',
+                index='sandbox',
+                token="test_lds_hec_token",
+                event_batch_size=8
+            ),
+            edgedns_hec=HecConfig(
+                source_type='edgedns_record',
+                index='sandbox',
+                token="test_edgedns_hec_token",
+                event_batch_size=10
+            )
         ),
         akamai=AkamaiConfig(
             netstorage=NetStorageConfig(

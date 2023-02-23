@@ -23,14 +23,20 @@ import yaml
 
 
 @dataclass
+class HecConfig:
+    source_type: Optional[str]
+    index: Optional[str]
+    token: str
+    event_batch_size: int
+
+
+@dataclass
 class SplunkConfig:
     host: str
-    hec_source_type: Optional[str]
-    hec_index: Optional[str]
     hec_port: int
-    hec_token: str
     hec_use_ssl: bool
-    hec_batch_size: int
+    lds_hec: HecConfig
+    edgedns_hec: Optional[HecConfig]
 
 
 @dataclass
@@ -99,13 +105,14 @@ _KEY_OPEN_ACCOUNT_SWITCH_KEY = 'account_switch_key'
 
 _KEY_SPLUNK = 'splunk'
 _KEY_SPLUNK_HOST = 'host'
-_KEY_SPLUNK_HEC = 'hec'
-_KEY_SPLUNK_HEC_PORT = 'port'
+_KEY_SPLUNK_HEC_PORT = 'hec_port'
+_KEY_SPLUNK_HEC_SSL = 'hec_use_ssl'
+_KEY_SPLUNK_HEC_LDS = 'lds_hec'
+_KEY_SPLUNK_HEC_EDGEDNS = 'edgedns_hec'
+_KEY_SPLUNK_HEC_BATCH_SIZE = 'batch_size'
 _KEY_SPLUNK_HEC_TOKEN = 'token'
-_KEY_SPLUNK_HEC_SSL = 'use_ssl'
 _KEY_SPLUNK_HEC_SOURCE_TYPE = 'source_type'
 _KEY_SPLUNK_HEC_INDEX = 'index'
-_KEY_SPLUNK_HEC_BATCH_SIZE = 'batch_size'
 
 
 _KEY_CONNECTOR = 'connector'
@@ -114,10 +121,14 @@ _KEY_CONNECTOR_TIMESTAMP_PARSE = 'timestamp_parse'
 _KEY_CONNECTOR_TIMESTAMP_STRPTIME = 'timestamp_strptime'
 _KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = 'log_poll_period_sec'
 
+
 def _is_config_valid(config: Config) -> bool:
-    if config.akamai.edgedns is not None:
-        if config.akamai.edgedns.send_records and config.akamai.open is None:
+    if config.akamai.edgedns is not None and config.akamai.edgedns.send_records:
+        if config.akamai.open is None:
             logging.error('Invalid config. DNS record sending enabled but Akamai OPEN credentials not provided')
+            return False
+        if config.splunk.edgedns_hec is None:
+            logging.error('Invalid config. DNS record sending enabled but Splunk HEC token not provided')
             return False
 
     return True
@@ -139,53 +150,72 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
     yaml_config = yaml.safe_load(yaml_stream)
 
     try:
-        ns_yaml_config = yaml_config[_KEY_AKAMAI][_KEY_NS]
-        ns_config = NetStorageConfig(
-            host=ns_yaml_config[_KEY_NS_HOST],
-            account=ns_yaml_config[_KEY_NS_ACCOUNT],
-            cp_code=ns_yaml_config[_KEY_NS_CP_CODE],
-            key=ns_yaml_config[_KEY_NS_KEY],
-            use_ssl=ns_yaml_config[_KEY_NS_SSL],
-            log_dir=ns_yaml_config[_KEY_NS_LOG_DIR]
+        # Akamai Config
+        ns_yaml = yaml_config[_KEY_AKAMAI][_KEY_NS]
+        akamai_config = AkamaiConfig(
+                netstorage=NetStorageConfig(
+                    host=ns_yaml[_KEY_NS_HOST],
+                    account=ns_yaml[_KEY_NS_ACCOUNT],
+                    cp_code=ns_yaml[_KEY_NS_CP_CODE],
+                    key=ns_yaml[_KEY_NS_KEY],
+                    use_ssl=ns_yaml[_KEY_NS_SSL],
+                    log_dir=ns_yaml[_KEY_NS_LOG_DIR]
+                ),
+                edgedns=None,
+                open=None
         )
-        edgedns_yaml_config = yaml_config[_KEY_AKAMAI].get(_KEY_EDGEDNS, None)
-        edgedns_config = None
-        if edgedns_yaml_config is not None:
-            edgedns_config = EdgeDnsConfig(
-                send_records=edgedns_yaml_config[_KEY_EDGEDNS_SEND_RECORDS],
-                zone_name=edgedns_yaml_config[_KEY_EDGEDNS_ZONE]
-            )
-        open_yaml_config = yaml_config[_KEY_AKAMAI].get(_KEY_OPEN, None)
-        open_config = None
-        if open_yaml_config is not None:
-            open_config = AkamaiOpenConfig(
-                client_secret=open_yaml_config[_KEY_OPEN_CLIENT_SECRET],
-                host=open_yaml_config[_KEY_OPEN_HOST],
-                access_token=open_yaml_config[_KEY_OPEN_ACCESS_TOKEN],
-                client_token=open_yaml_config[_KEY_OPEN_CLIENT_TOKEN],
-                account_switch_key=open_yaml_config.get(_KEY_OPEN_ACCOUNT_SWITCH_KEY, None)
+
+        # Akamai EdgeDNS Config
+        edgedns_yaml = yaml_config[_KEY_AKAMAI].get(_KEY_EDGEDNS, None)
+        if edgedns_yaml is not None:
+            akamai_config.edgedns = EdgeDnsConfig(
+                send_records=edgedns_yaml[_KEY_EDGEDNS_SEND_RECORDS],
+                zone_name=edgedns_yaml[_KEY_EDGEDNS_ZONE]
             )
 
-        splunk_yaml_config = yaml_config[_KEY_SPLUNK]
-        splunk_hec_yaml_config = splunk_yaml_config[_KEY_SPLUNK_HEC]
+
+        # Akamai OPEN Config
+        open_yaml = yaml_config[_KEY_AKAMAI].get(_KEY_OPEN, None)
+        if open_yaml is not None:
+            akamai_config.open = AkamaiOpenConfig(
+                client_secret=open_yaml[_KEY_OPEN_CLIENT_SECRET],
+                host=open_yaml[_KEY_OPEN_HOST],
+                access_token=open_yaml[_KEY_OPEN_ACCESS_TOKEN],
+                client_token=open_yaml[_KEY_OPEN_CLIENT_TOKEN],
+                account_switch_key=open_yaml.get(_KEY_OPEN_ACCOUNT_SWITCH_KEY, None)
+            )
+
+        # Splunk Config
+        splunk_yaml = yaml_config[_KEY_SPLUNK]
+        splunk_lds_yaml = splunk_yaml[_KEY_SPLUNK_HEC_LDS]
         splunk_config = SplunkConfig(
-            host=splunk_yaml_config[_KEY_SPLUNK_HOST],
-            hec_source_type=splunk_hec_yaml_config.get(_KEY_SPLUNK_HEC_SOURCE_TYPE),
-            hec_index=splunk_hec_yaml_config.get(_KEY_SPLUNK_HEC_INDEX),
-            hec_port=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_PORT],
-            hec_token=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_TOKEN],
-            hec_use_ssl=splunk_hec_yaml_config[_KEY_SPLUNK_HEC_SSL],
-            hec_batch_size=splunk_hec_yaml_config.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
+            host=splunk_yaml[_KEY_SPLUNK_HOST],
+            hec_port=splunk_yaml[_KEY_SPLUNK_HEC_PORT],
+            hec_use_ssl=splunk_yaml[_KEY_SPLUNK_HEC_SSL],
+            lds_hec=HecConfig(
+                source_type=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_SOURCE_TYPE, None),
+                index=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_INDEX, None),
+                token=splunk_lds_yaml[_KEY_SPLUNK_HEC_TOKEN],
+                event_batch_size=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
+            ),
+            edgedns_hec=None
         )
+
+        # Splunk EdgeDNS HEC Config 
+        splunk_edgedns_yaml = splunk_yaml.get(_KEY_SPLUNK_HEC_EDGEDNS)
+        if splunk_edgedns_yaml is not None:
+            splunk_config.edgedns_hec = HecConfig(
+                source_type=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_SOURCE_TYPE, None),
+                index=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_INDEX, None),
+                token=splunk_edgedns_yaml[_KEY_SPLUNK_HEC_TOKEN],
+                event_batch_size=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
+            )
 
         connector_yaml_config = yaml_config[_KEY_CONNECTOR]
 
         config = Config(
             splunk=splunk_config,
-            akamai=AkamaiConfig(
-                netstorage=ns_config,
-                edgedns=edgedns_config,
-                open=open_config),
+            akamai=akamai_config,
             log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
             timestamp_parse=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_PARSE],
             timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME],

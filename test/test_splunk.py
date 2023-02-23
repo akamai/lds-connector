@@ -62,7 +62,7 @@ class SplunkTest(unittest.TestCase):
 
     def test_publish(self):
         config = test_data.create_config()
-        config.splunk.hec_batch_size = 1
+        config.splunk.lds_hec.event_batch_size = 1
 
         splunk = Splunk(config)
         splunk._publish = MagicMock()
@@ -77,16 +77,16 @@ class SplunkTest(unittest.TestCase):
             'host': socket.gethostname(),
             'source': 'splunk-lds-connector',
             'event': log_line,
-            'sourcetype': config.splunk.hec_source_type,
-            'index': config.splunk.hec_index
+            'sourcetype': config.splunk.lds_hec.source_type,
+            'index': config.splunk.lds_hec.index
         }
         splunk._publish.assert_called_once_with([expected_event])
 
     def test_publish_no_optionals(self):
         config = test_data.create_config()
-        config.splunk.hec_source_type = None
-        config.splunk.hec_index = None
-        config.splunk.hec_batch_size = 1
+        config.splunk.lds_hec.source_type = None
+        config.splunk.lds_hec.index = None
+        config.splunk.lds_hec.event_batch_size = 1
         
         splunk = Splunk(config)
         splunk._publish = MagicMock()
@@ -106,7 +106,7 @@ class SplunkTest(unittest.TestCase):
 
     def test_publish_no_events(self):
         config = test_data.create_config()
-        config.splunk.hec_batch_size = 1
+        config.splunk.lds_hec.event_batch_size = 1
 
         splunk = Splunk(config)
         splunk._publish = MagicMock()
@@ -117,7 +117,7 @@ class SplunkTest(unittest.TestCase):
 
     def test_publish_not_full_batch(self):
         config = test_data.create_config()
-        config.splunk.hec_batch_size = 3
+        config.splunk.lds_hec.event_batch_size = 3
 
         splunk = Splunk(config)
         splunk._publish = MagicMock()
@@ -134,7 +134,7 @@ class SplunkTest(unittest.TestCase):
 
     def test_publish_full_batch(self):
         config = test_data.create_config()
-        config.splunk.hec_batch_size = 3
+        config.splunk.lds_hec.event_batch_size = 3
 
         splunk = Splunk(config)
         splunk._publish = MagicMock()
@@ -155,15 +155,15 @@ class SplunkTest(unittest.TestCase):
             'host': socket.gethostname(),
             'source': 'splunk-lds-connector',
             'event': log_line,
-            'sourcetype': config.splunk.hec_source_type,
-            'index': config.splunk.hec_index
+            'sourcetype': config.splunk.lds_hec.source_type,
+            'index': config.splunk.lds_hec.index
         }
 
         splunk._publish.assert_called_once_with([expected_event, expected_event, expected_event])
 
     def test_publish_force_not_full_batch(self):
         config = test_data.create_config()
-        config.splunk.hec_batch_size = 3
+        config.splunk.lds_hec.event_batch_size = 3
 
         splunk = Splunk(config)
         splunk._publish = MagicMock()
@@ -181,8 +181,8 @@ class SplunkTest(unittest.TestCase):
             'host': socket.gethostname(),
             'source': 'splunk-lds-connector',
             'event': log_line,
-            'sourcetype': config.splunk.hec_source_type,
-            'index': config.splunk.hec_index
+            'sourcetype': config.splunk.lds_hec.source_type,
+            'index': config.splunk.lds_hec.index
         }
         splunk._publish.assert_called_once_with([expected_event, expected_event])
 

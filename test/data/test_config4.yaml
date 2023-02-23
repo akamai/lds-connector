@@ -1,14 +1,21 @@
 ---
 
+# akamai.open not set, but akamai.edgedns.send_records is true
+
 splunk :
   host : "127.0.0.1"
-  hec :
-    source_type: "lds_log_dns"
-    index: "sandbox"
-    port : 8088
-    token : "test_hec_token"
-    use_ssl : false
+  hec_port : 8088
+  hec_use_ssl : false
+  lds_hec :
+    source_type: 'lds_log_dns'
+    index: 'sandbox'
+    token : 'test_lds_hec_token'
     batch_size : 8
+  edgedns_hec :
+    source_type: 'edgedns_record'
+    index: 'sandbox'
+    token : 'test_edgedns_hec_token'
+    batch_size : 10
 
 akamai :
   netstorage : 

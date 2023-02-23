@@ -2,12 +2,18 @@
 
 splunk :
   host : '127.0.0.1'            # Splunk deployment's host name / IP
-  hec :
-    port : 8088       # HEC port
-    token : ''        # HEC token
-    use_ssl : false   # Use SSL for HEC API
+  hec_port : 8088               # HEC port
+  hec_use_ssl : false           # HEC use SSL 
+  lds_hec :
+    token : ''                    # HEC token for LogDeliveryService logs
     source_type: 'lds_log_dns'    # Optional. Override HEC token default source type 
     index: 'sandbox'              # Optional. Override HEC token's default index. Must be in HEC token's allow list
+    batch_size: 20                # Optional. Default 10. Number of events to send Splunk in single request
+  edgedns_hec :
+    token : ''                    # HEC token for EdgeDNS zone records
+    source_type: 'edgedns_log'    # Optional. Override HEC token default source type 
+    index: 'sandbox'              # Optional. Override HEC token's default index. Must be in HEC token's allow list
+  
 
 akamai :
   netstorage : 
@@ -31,4 +37,4 @@ connector :
   log_download_dir : 'tmp/'                   # Local log download directory
   timestamp_parse: '{} - {} {timestamp},{}'   # Timestamp parse format. Parses timestamp substring from log line
   timestamp_strptime: '%d/%m/%Y %H:%M:%S'     # Timestamp strptime format. Parses timestamp substring into datetime
-  log_poll_period_sec : 30                    # NetStorage log poll period in seconds
+  log_poll_period_sec : 30                    # Optional. Default 60. NetStorage log poll period in seconds
