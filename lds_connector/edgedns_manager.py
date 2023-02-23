@@ -16,8 +16,11 @@
 # limitations under the License.
 
 import logging
+import time
+import dataclasses
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
+import json
 
 import requests
 from akamai.edgegrid import EdgeGridAuth
@@ -27,9 +30,11 @@ from .config import Config
 
 @dataclass
 class DnsRecord:
+    time_fetched_sec: float
+    zone: str
     name: str
     type: str
-    ttl: int
+    ttl_sec: int
     rdata: list[str]
 
 
@@ -86,14 +91,18 @@ class EdgeDnsManager():
         return record_set
 
     def _parse_records(self, json_response) -> list[DnsRecord]:
-        records = []
+        assert self.config.akamai.edgedns is not None
 
+        records = []
+        time_fetched_sec = time.time()
         for json_record in json_response['recordsets']:
             try:
                 records.append(DnsRecord(
+                    zone=self.config.akamai.edgedns.zone_name,
+                    time_fetched_sec=time_fetched_sec,
                     name=json_record['name'],
                     type=json_record['type'],
-                    ttl=json_record['ttl'],
+                    ttl_sec=json_record['ttl'],
                     rdata=json_record['rdata']
                 ))
             except (KeyError, TypeError) as key_error:

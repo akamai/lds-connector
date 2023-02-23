@@ -150,29 +150,35 @@ def get_ns_file3():
     )
 
 
+DNS_RECORD1_JSON = '{"time_fetched_sec": 0, "zone": "edgedns.zone", "name": "edgedns.zone", "type": "CAA", ' \
+    + '"ttl_sec": 300, "rdata": ["0 issue \\"ca.sectigo.com\\"", "0 issue \\"ca.digicert.com\\""]}'
 def create_dns_record1():
     return DnsRecord(
+        zone='edgedns.zone',
+        time_fetched_sec=0,
         name='edgedns.zone',
         type='CAA',
-        ttl=300,
+        ttl_sec=300,
         rdata=['0 issue \"ca.sectigo.com\"', '0 issue \"ca.digicert.com\"']
     )
 
-
 def create_dns_record2():
     return DnsRecord(
+        zone='edgedns.zone',
+        time_fetched_sec=0,
         name='edgedns.zone',
         type='SOA',
-        ttl=86400,
+        ttl_sec=86400,
         rdata=['a1-247.akam.net. hostmaster.edgedns.zone. 2019102601 3600 600 604800 300']
     )
 
-
 def create_dns_record3():
     return DnsRecord(
+        zone='edgedns.zone',
+        time_fetched_sec=0,
         name='cam.edgedns.zone',
         type='A',
-        ttl=300,
+        ttl_sec=300,
         rdata=['192.0.2.2']
     )
 

@@ -20,12 +20,14 @@ import socket
 from datetime import datetime, timezone
 from urllib.parse import urljoin
 import json
+from typing import Any
 
 import parse
 import requests
 
 from .config import Config
-
+from .edgedns_manager import DnsRecord
+from .json import CustomJsonEncoder
 
 class Splunk:
     """
@@ -36,13 +38,10 @@ class Splunk:
 
     def __init__(self, config: Config):
         self.config = config
-        self.queue = []
+        self.log_queue = []
+        self.dns_queue = []
 
-    def handle_logline(self, log_line: str) -> None:
-        pass
-
-
-    def add(self, log_line: str) -> None:
+    def add_log_line(self, log_line: str) -> None:
         """
         Convert a log line to an HEC event and add it to the queue.
 
@@ -61,7 +60,7 @@ class Splunk:
         hec_json = {
             'time': timestamp_sec,
             'host': socket.gethostname(),
-            'source': 'splunk-lds-connector',
+            'source': 'lds-connector',
             'event': log_line
         }
         if self.config.splunk.lds_hec.source_type:
@@ -69,11 +68,36 @@ class Splunk:
         if self.config.splunk.lds_hec.index:
             hec_json['index'] = self.config.splunk.lds_hec.index
 
-        self.queue.append(hec_json)
+        self.log_queue.append(hec_json)
 
-    def publish(self, force=False) -> bool:
+    def add_dns_record(self, dns_record: DnsRecord) -> None:
         """
-        Publish queued HEC events to Splunk HEC
+        Convert a DNS record to an HEC event and add it to the queue.
+
+        Parameters:
+            dns_record (DnsRecord): The DNS record.
+
+        Returns: None
+        """
+
+        hec_json = {
+            'time': dns_record.time_fetched_sec,
+            'host': socket.gethostname(),
+            'source': 'lds-connector',
+            'event': dns_record
+        }
+
+        assert self.config.splunk.edgedns_hec is not None
+        if self.config.splunk.edgedns_hec.source_type:
+            hec_json['sourcetype'] = self.config.splunk.edgedns_hec.source_type
+        if self.config.splunk.edgedns_hec.index:
+            hec_json['index'] = self.config.splunk.edgedns_hec.index
+
+        self.dns_queue.append(hec_json)
+
+    def publish_log_lines(self, force=False) -> bool:
+        """
+        Publish queued log line HEC events to Splunk HEC
 
         Parameters:
             force (bool): If true, send queued events. Otherwise, send queued events iff queue size >= batch size.
@@ -81,19 +105,28 @@ class Splunk:
         Returns:
             bool: If events were published, true. Otherwise, false.
         """
-        logging.debug('Publishing events to Splunk')
+        return self._publish(
+            queue=self.log_queue,
+            batch_size=self.config.splunk.lds_hec.event_batch_size,
+            token=self.config.splunk.lds_hec.token,
+            force=force)
 
-        if len(self.queue) == 0:
-            return False
+    def publish_dns_records(self, force=False) -> bool:
+        """
+        Publish queued DNS record HEC events to Splunk HEC
 
-        if len(self.queue) < self.config.splunk.lds_hec.event_batch_size and not force:
-            return False
+        Parameters:
+            force (bool): If true, send queued events. Otherwise, send queued events iff queue size >= batch size.
 
-        self._publish(self.queue)
-
-        self.queue = []
-        logging.debug('Published events to Splunk')
-        return True
+        Returns:
+            bool: If events were published, true. Otherwise, false.
+        """
+        assert self.config.splunk.edgedns_hec is not None
+        return self._publish(
+            queue=self.dns_queue,
+            batch_size=self.config.splunk.edgedns_hec.event_batch_size,
+            token=self.config.splunk.edgedns_hec.token,
+            force=force)
 
     def clear(self):
         """
@@ -102,24 +135,31 @@ class Splunk:
         Parameters: None
         Returns: None
         """
-        self.queue.clear()
+        self.log_queue.clear()
 
-    def _publish(self, events) -> None:
-        """
-        Publish events to Splunk HEC. 
+    def _publish(self, queue: list[dict[str, Any]], batch_size: int, token: str, force: bool):
+        logging.debug('Publishing events to Splunk')
 
-        Parameters:
-            events (list[str]): The events to send
+        if len(queue) == 0:
+            return False
 
-        Returns: None
-        """
+        if len(queue) < batch_size and not force:
+            return False
+
         protocol = "https://" if self.config.splunk.hec_use_ssl else "http://"
         baseurl = f'{protocol}{self.config.splunk.host}:{self.config.splunk.hec_port}'
         url = urljoin(baseurl, Splunk._HEC_ENDPOINT)
-        headers = {"Authorization": "Splunk " + self.config.splunk.lds_hec.token}
+        headers = {"Authorization": "Splunk " + token}
 
-        events_json = '\n'.join([json.dumps(event) for event in events])
+        events_json = '\n'.join([json.dumps(event, cls=CustomJsonEncoder) for event in queue])
 
+        self._post(url=url, headers=headers, events_json=events_json)
+
+        queue.clear()
+        logging.debug('Published events to Splunk')
+        return True
+
+    def _post(self, url, headers, events_json) -> None:
         response = requests.post(url, headers=headers, data=events_json, timeout=Splunk._TIMEOUT_SEC)
         if response.status_code != 200:
             logging.error('Splunk HEC responded with [%s]. Ignoring and moving on', response.status_code)

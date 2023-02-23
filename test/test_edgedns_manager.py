@@ -18,10 +18,12 @@
 import unittest
 from test import test_data
 from unittest.mock import MagicMock
+import json
 
 import requests
 
 from lds_connector.edgedns_manager import EdgeDnsManager
+from lds_connector.json import CustomJsonEncoder
 
 
 class MockResponse(requests.Response):
@@ -49,6 +51,8 @@ class EdgeDnsManagerTest(unittest.TestCase):
         ]
 
         actual_records = edgedns_manager.get_records()
+        for record in actual_records:
+            record.time_fetched_sec=0
 
         self.assertEqual(actual_records, expected_records)
 
@@ -70,8 +74,17 @@ class EdgeDnsManagerTest(unittest.TestCase):
         ]
 
         actual_records = edgedns_manager.get_records()
+        for record in actual_records:
+            record.time_fetched_sec=0
 
         self.assertEqual(actual_records, expected_records)
+
+    def test_dns_record_json(self):
+        dns_record = test_data.create_dns_record1()
+
+        actual_json = json.dumps(dns_record, cls=CustomJsonEncoder)
+
+        self.assertEqual(actual_json, test_data.DNS_RECORD1_JSON)
         
 
 if __name__ == '__main__':

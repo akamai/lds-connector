@@ -95,14 +95,14 @@ class Connector:
                     line_number += 1
                     if line_number > log_file.last_processed_line:
                         # Only handle lines that haven't been processed already
-                        self.splunk.add(log_line)
-                        if self.splunk.publish():
+                        self.splunk.add_log_line(log_line)
+                        if self.splunk.publish_log_lines():
                             log_file.last_processed_line = line_number
 
                     log_line = file.readline()
 
                 # Publish remaining log lines
-                if self.splunk.publish(force=True):
+                if self.splunk.publish_log_lines(force=True):
                     log_file.last_processed_line = line_number
                 log_file.processed = True
 
