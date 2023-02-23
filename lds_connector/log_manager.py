@@ -71,13 +71,13 @@ class LogManager:
         self.config = config
 
         self.netstorage = Netstorage(
-            hostname=self.config.netstorage.host,
-            keyname=self.config.netstorage.account,
-            key=self.config.netstorage.key,
-            ssl=self.config.netstorage.use_ssl
+            hostname=self.config.lds.ns.host,
+            keyname=self.config.lds.ns.account,
+            key=self.config.lds.ns.key,
+            ssl=self.config.lds.ns.use_ssl
         )
 
-        self.resume_path = os.path.join(config.log_download_dir, LogManager._RESUME_PICKLE_FILE_NAME)
+        self.resume_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_PICKLE_FILE_NAME)
 
         if os.path.isfile(self.resume_path):
             with open(self.resume_path, 'rb') as file:
@@ -94,7 +94,7 @@ class LogManager:
 
         logging.debug('Saving resume data: %s', self.current_log_file)
 
-        LogManager._ensure_dir_exists(self.config.log_download_dir)
+        LogManager._ensure_dir_exists(self.config.lds.log_download_dir)
 
         with open(self.resume_path, 'wb') as file:
             pickle.dump(self.current_log_file, file)
@@ -210,9 +210,9 @@ class LogManager:
         """
         logging.debug('Fetching available log files list from NetStorage')
 
-        ls_path = f'/{self.config.netstorage.cp_code}'
-        if self.config.netstorage.log_dir:
-            ls_path += f'/{self.config.netstorage.log_dir}'
+        ls_path = f'/{self.config.lds.ns.cp_code}'
+        if self.config.lds.ns.log_dir:
+            ls_path += f'/{self.config.lds.ns.log_dir}'
 
         _, response = self.netstorage.list(ls_path)
         if response is None or response.status_code != 200:
@@ -233,9 +233,9 @@ class LogManager:
         """
         logging.debug('Downloading log file from NetStorage: [%s]', log_file.filename_gz)
 
-        LogManager._ensure_dir_exists(self.config.log_download_dir)
+        LogManager._ensure_dir_exists(self.config.lds.log_download_dir)
 
-        local_path_gz = os.path.join(self.config.log_download_dir, log_file.filename_gz)
+        local_path_gz = os.path.join(self.config.lds.log_download_dir, log_file.filename_gz)
         self.netstorage.download(log_file.ns_path_gz, local_path_gz)
         log_file.local_path_gz = local_path_gz
 

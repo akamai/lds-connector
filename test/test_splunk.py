@@ -47,8 +47,8 @@ class SplunkTest(unittest.TestCase):
 
     def test_parse_timestamp_epoch(self):
         config = test_data.create_config()
-        config.timestamp_parse = '{} - {timestamp} {}'
-        config.timestamp_strptime = '%s'
+        config.lds.timestamp_parse = '{} - {timestamp} {}'
+        config.lds.timestamp_strptime = '%s'
         splunk = Splunk(config)
 
         for (expected_timestamp, log_line) in SplunkTest._TIMESTAMP_TO_LOG_LINE:

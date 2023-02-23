@@ -56,17 +56,10 @@ def create_config():
                 event_batch_size=10
             )
         ),
-        netstorage=NetStorageConfig(
-            host="test_ns_host",
-            account="test_ns_account",
-            cp_code=123456,
-            key="test_key",
-            use_ssl=True,
-            log_dir='logs1'
-        ),
         edgedns=EdgeDnsConfig(
             send_records=True,
-            zone_name='edgedns.zone'
+            zone_name='edgedns.zone',
+            poll_period_sec=3600
         ),
         open=AkamaiOpenConfig(
             client_secret='test_client_secret',
@@ -75,10 +68,20 @@ def create_config():
             client_token='test_client_token',
             account_switch_key='test_account_switch_key'
         ),
-        log_download_dir=os.path.abspath('logs2'),
-        timestamp_parse='{} - {} {timestamp},{}',
-        timestamp_strptime='%d/%m/%Y %H:%M:%S',
-        poll_period_sec=60
+        lds=LdsConfig(
+            ns=NetStorageConfig(
+                host="test_ns_host",
+                account="test_ns_account",
+                cp_code=123456,
+                key="test_key",
+                use_ssl=True,
+                log_dir='logs1'
+            ),
+            log_download_dir=os.path.abspath('logs2'),
+            timestamp_parse='{} - {} {timestamp},{}',
+            timestamp_strptime='%d/%m/%Y %H:%M:%S',
+            poll_period_sec=60
+        )
     )
 
 

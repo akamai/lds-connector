@@ -9,15 +9,15 @@ splunk :
   lds_hec :
     token : "test_lds_hec_token"
 
-netstorage : 
-  host : "test_ns_host"
-  upload_account : "test_ns_account"
-  cp_code : 123456
-  key : "test_key"
-  use_ssl : true
-  log_dir : 'logs1'
 
-connector :
+lds :
+  ns : 
+    host : "test_ns_host"
+    upload_account : "test_ns_account"
+    cp_code : 123456
+    key : "test_key"
+    use_ssl : true
+    log_dir : 'logs1'
   log_download_dir : "logs2"
   timestamp_parse: "{} - {} {timestamp},{}"
   timestamp_strptime: "%d/%m/%Y %H:%M:%S"

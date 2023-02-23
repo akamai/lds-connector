@@ -157,7 +157,7 @@ class LogManagerTest(unittest.TestCase):
 
     def test_get_next_log(self):
         config = test_data.create_config()
-        config.log_download_dir = test_data.TEMP_DIR
+        config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
         log_manager._list = MagicMock(return_value = \
@@ -185,7 +185,7 @@ class LogManagerTest(unittest.TestCase):
             pickle.dump(resume_data, file)
 
         config = test_data.create_config()
-        config.log_download_dir = test_data.TEMP_DIR
+        config.lds.log_download_dir = test_data.TEMP_DIR
 
         log_manager = LogManager(config)
 
@@ -201,7 +201,7 @@ class LogManagerTest(unittest.TestCase):
             pickle.dump(resume_data, file)
 
         config = test_data.create_config()
-        config.log_download_dir = test_data.TEMP_DIR
+        config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
         log_file = log_manager.get_next_log()
@@ -219,7 +219,7 @@ class LogManagerTest(unittest.TestCase):
             pickle.dump(resume_data, file)
 
         config = test_data.create_config()
-        config.log_download_dir = test_data.TEMP_DIR
+        config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
         log_manager._list = MagicMock(return_value = \
@@ -247,7 +247,7 @@ class LogManagerTest(unittest.TestCase):
             pickle.dump(resume_data, file)
 
         config = test_data.create_config()
-        config.log_download_dir = test_data.TEMP_DIR
+        config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
         log_manager._list = MagicMock(return_value = \

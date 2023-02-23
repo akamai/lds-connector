@@ -175,14 +175,14 @@ class Splunk:
             float: The epoch timestamp in seconds
         """
         # Parse timestamp substring using format string
-        parse_result = parse.parse(self.config.timestamp_parse, log_line)
+        parse_result = parse.parse(self.config.lds.timestamp_parse, log_line)
         assert isinstance(parse_result, parse.Result)
         timestamp_substr = parse_result['timestamp']
 
         # Convert timestamp substring to UNIX timestamp
-        if self.config.timestamp_strptime == '%s':
+        if self.config.lds.timestamp_strptime == '%s':
             return float(timestamp_substr)
         else:
-            timestamp_datetime = datetime.strptime(timestamp_substr, self.config.timestamp_strptime)
+            timestamp_datetime = datetime.strptime(timestamp_substr, self.config.lds.timestamp_strptime)
             timestamp_datetime = timestamp_datetime.replace(tzinfo=timezone.utc)
             return timestamp_datetime.timestamp()

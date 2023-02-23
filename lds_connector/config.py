@@ -53,7 +53,7 @@ class NetStorageConfig:
 class EdgeDnsConfig:
     send_records: bool
     zone_name: str
-
+    poll_period_sec: int
 
 @dataclass
 class AkamaiOpenConfig:
@@ -65,28 +65,26 @@ class AkamaiOpenConfig:
 
 
 @dataclass
-class Config:
-    splunk: SplunkConfig
-    netstorage: NetStorageConfig
-    edgedns: Optional[EdgeDnsConfig]
-    open: Optional[AkamaiOpenConfig]
+class LdsConfig:
+    ns: NetStorageConfig
     log_download_dir: str
     timestamp_strptime: str
     timestamp_parse: str
     poll_period_sec: int
 
 
-_KEY_NS = 'netstorage'
-_KEY_NS_HOST = 'host'
-_KEY_NS_ACCOUNT = 'upload_account'
-_KEY_NS_CP_CODE = 'cp_code'
-_KEY_NS_KEY = 'key'
-_KEY_NS_SSL = 'use_ssl'
-_KEY_NS_LOG_DIR = 'log_dir'
+@dataclass
+class Config:
+    splunk: SplunkConfig
+    lds: LdsConfig
+    edgedns: Optional[EdgeDnsConfig]
+    open: Optional[AkamaiOpenConfig]
+
 
 _KEY_EDGEDNS = 'edgedns'
 _KEY_EDGEDNS_ZONE = 'zone_name'
 _KEY_EDGEDNS_SEND_RECORDS = 'send_records'
+_KEY_EDGEDNS_POLL_PERIOD = 'poll_period_sec'
 
 _KEY_OPEN = 'open'
 _KEY_OPEN_CLIENT_SECRET = 'client_secret'
@@ -94,7 +92,6 @@ _KEY_OPEN_HOST = 'host'
 _KEY_OPEN_ACCESS_TOKEN = 'access_token'
 _KEY_OPEN_CLIENT_TOKEN = 'client_token'
 _KEY_OPEN_ACCOUNT_SWITCH_KEY = 'account_switch_key'
-
 
 _KEY_SPLUNK = 'splunk'
 _KEY_SPLUNK_HOST = 'host'
@@ -107,12 +104,19 @@ _KEY_SPLUNK_HEC_TOKEN = 'token'
 _KEY_SPLUNK_HEC_SOURCE_TYPE = 'source_type'
 _KEY_SPLUNK_HEC_INDEX = 'index'
 
+_KEY_LDS = 'lds'
+_KEY_LDS_LOG_DIR = 'log_download_dir'
+_KEY_LDS_TIMESTAMP_PARSE = 'timestamp_parse'
+_KEY_LDS_TIMESTAMP_STRPTIME = 'timestamp_strptime'
+_KEY_LDS_LOG_POLL_PERIOD_SEC = 'log_poll_period_sec'
 
-_KEY_CONNECTOR = 'connector'
-_KEY_CONNECTOR_LOG_DIR = 'log_download_dir'
-_KEY_CONNECTOR_TIMESTAMP_PARSE = 'timestamp_parse'
-_KEY_CONNECTOR_TIMESTAMP_STRPTIME = 'timestamp_strptime'
-_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = 'log_poll_period_sec'
+_KEY_NS = 'ns'
+_KEY_NS_HOST = 'host'
+_KEY_NS_ACCOUNT = 'upload_account'
+_KEY_NS_CP_CODE = 'cp_code'
+_KEY_NS_KEY = 'key'
+_KEY_NS_SSL = 'use_ssl'
+_KEY_NS_LOG_DIR = 'log_dir'
 
 
 def _is_config_valid(config: Config) -> bool:
@@ -143,26 +147,15 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
     yaml_config = yaml.safe_load(yaml_stream)
 
     try:
-        # Akamai NetStorage Config
-        ns_yaml = yaml_config[_KEY_NS]
-        ns_config = NetStorageConfig(
-            host=ns_yaml[_KEY_NS_HOST],
-            account=ns_yaml[_KEY_NS_ACCOUNT],
-            cp_code=ns_yaml[_KEY_NS_CP_CODE],
-            key=ns_yaml[_KEY_NS_KEY],
-            use_ssl=ns_yaml[_KEY_NS_SSL],
-            log_dir=ns_yaml[_KEY_NS_LOG_DIR]
-        )
-
         # Akamai EdgeDNS Config
         edgedns_yaml = yaml_config.get(_KEY_EDGEDNS, None)
         edgedns_config = None
         if edgedns_yaml is not None:
             edgedns_config = EdgeDnsConfig(
                 send_records=edgedns_yaml[_KEY_EDGEDNS_SEND_RECORDS],
-                zone_name=edgedns_yaml[_KEY_EDGEDNS_ZONE]
+                zone_name=edgedns_yaml[_KEY_EDGEDNS_ZONE],
+                poll_period_sec=edgedns_yaml.get(_KEY_EDGEDNS_POLL_PERIOD, 7200)
             )
-
 
         # Akamai OPEN Config
         open_yaml = yaml_config.get(_KEY_OPEN, None)
@@ -202,17 +195,29 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
                 event_batch_size=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
             )
 
-        connector_yaml_config = yaml_config[_KEY_CONNECTOR]
+        # LDS Config
+        lds_yaml = yaml_config[_KEY_LDS]
+        ns_yaml = lds_yaml[_KEY_NS]
+        lds_config = LdsConfig(
+            ns=NetStorageConfig(
+                host=ns_yaml[_KEY_NS_HOST],
+                account=ns_yaml[_KEY_NS_ACCOUNT],
+                cp_code=ns_yaml[_KEY_NS_CP_CODE],
+                key=ns_yaml[_KEY_NS_KEY],
+                use_ssl=ns_yaml[_KEY_NS_SSL],
+                log_dir=ns_yaml[_KEY_NS_LOG_DIR]
+            ),
+            log_download_dir=os.path.abspath(lds_yaml[_KEY_LDS_LOG_DIR]),
+            timestamp_parse=lds_yaml[_KEY_LDS_TIMESTAMP_PARSE],
+            timestamp_strptime=lds_yaml[_KEY_LDS_TIMESTAMP_STRPTIME],
+            poll_period_sec=lds_yaml.get(_KEY_LDS_LOG_POLL_PERIOD_SEC, 60)
+        )
 
         config = Config(
+            lds=lds_config,
             splunk=splunk_config,
-            netstorage=ns_config,
-            open=open_config,
             edgedns=edgedns_config,
-            log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
-            timestamp_parse=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_PARSE],
-            timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME],
-            poll_period_sec=connector_yaml_config.get(_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC, 60)
+            open=open_config
         )
 
         if not _is_config_valid(config):

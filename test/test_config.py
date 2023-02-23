@@ -38,7 +38,7 @@ class ConfigTest(unittest.TestCase):
         expected_config.splunk.lds_hec.source_type = None
         expected_config.splunk.lds_hec.event_batch_size = 10
         expected_config.splunk.edgedns_hec = None
-        expected_config.poll_period_sec = 60
+        expected_config.lds.poll_period_sec = 60
         expected_config.edgedns = None
         expected_config.open = None
 
