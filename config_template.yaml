@@ -1,6 +1,6 @@
 ---
 
-splunk :
+splunk : # Splunk configuration
   host : '127.0.0.1'            # Splunk deployment's host name / IP
   hec_port : 8088               # HEC port
   hec_use_ssl : false           # HEC use SSL 
@@ -13,27 +13,28 @@ splunk :
     token : ''                    # HEC token for EdgeDNS zone records
     source_type: 'edgedns_log'    # Optional. Override HEC token default source type 
     index: 'sandbox'              # Optional. Override HEC token's default index. Must be in HEC token's allow list
-  
+    batch_size: 20                # Optional. Default 10. Number of events to send Splunk in single request
 
-akamai :
-  netstorage : 
+edgedns : # Optional. EdgeDNS configuration
+  send_records : true       # Fetch + send zone_name's resource records. Open must be configured
+  zone_name : 'example.com' # Zone to send records for
+  poll_period_sec : 3600    # Optional. Default 7200. Poll period in seconds
+
+open : # Optional. Akamai API credentials
+  client_secret : ''      # Client secret
+  host : ''               # Host
+  access_token : ''       # Access token
+  client_token : ''       # Client token
+  account_switch_key : '' # Optional. Account switch key
+
+lds : # LogDeliveryService configuration
+  ns : # NetStorage configuration
     host : ''               # HTTP domain name
     upload_account : ''     # Upload account ID
     cp_code : ''            # Upload directory's CP code
     key : ''                # HTTP CMS API key
     use_ssl : false         # Use SSL for NetStorage API
     log_dir : 'logs'        # Log directory path
-  edgedns : # Optional
-    send_records : true       # Sould fetch and send zone's resource records 
-    zone_name : 'example.com' # Zone to send records for
-  open : # Optional
-    client_secret : ''      # Client secret
-    host : ''               # Host
-    access_token : ''       # Access token
-    client_token : ''       # Client token
-    account_switch_key : '' # Optional. Account switch key
-
-connector :
   log_download_dir : 'tmp/'                   # Local log download directory
   timestamp_parse: '{} - {} {timestamp},{}'   # Timestamp parse format. Parses timestamp substring from log line
   timestamp_strptime: '%d/%m/%Y %H:%M:%S'     # Timestamp strptime format. Parses timestamp substring into datetime

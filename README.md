@@ -84,9 +84,9 @@ First, we'll create a storage group. You can use an existing storage group. Othe
 by following [these instructions](https://techdocs.akamai.com/netstorage/docs/create-a-storage-group).
 
 **Take note** of the following
-- `Storage Group Details -> Storage Group Name`: This is the human-readable storage group name. 
-- `Storage Group Details -> HTTP Domain Name`: This is the host the API requests will be sent to.
-- `Upload Directories -> Upload Directory`: This is the CP code that identifies the upload directory. A storage group 
+- `Storage Group Name`: This is the human-readable storage group name. 
+- `HTTP Domain Name`: This is the host the API requests will be sent to.
+- `Upload Directory`: This is the CP code that identifies the upload directory. A storage group 
   can have multiple upload directories.
 
 Next, we'll configure an automatic purge policy for the upload directory.
@@ -99,6 +99,7 @@ Next, we'll configure an automatic purge policy for the upload directory.
     - `Purge When The Directory Reaches`: The log directory's maximum size. 
     - `Only Purge Content Older Than (in days)`: The minimum number of days to keep files for. Files newer than this 
       time will not be purged, even if the directory file size exceeds the maximum
+4. Done!
 
 NetStorage only needs to store the log files long enough for the script to move them into Splunk. If there's an issue 
 ingesting log data into Splunk, the unprocessed log files in NetStorage may be automatically purged before the issue is 
@@ -117,9 +118,9 @@ When developing this application, I used DNS logs for a relatively quiet zone. I
 Next, we'll configure an upload account to access the upload directory.
 1. Go to NetStorage -> Upload Accounts. Click "+Add Upload Account".
 2. Configure the upload account
-  - `Id`: Choose this name. Take note
-  - `Upload Directory Association`: The CP code noted above.
-  - `Access Methods`: Add a `Netstorage HTTP CMS API` key. *Take note* of the key 
+    - `Id`: Choose this name. Take note
+    - `Upload Directory Association`: The CP code noted above.
+    - `Access Methods`: Add a `Netstorage HTTP CMS API` key. *Take note* of the key 
 5. Done!
 
 Great job! NetStorage is configured. It can take a few minutes for the upload account permissions to propagate.
@@ -132,15 +133,14 @@ We need to configure LDS to deliver logs into our NetStorage log directory.
 
 Follow these steps.
 1. Go to Common Services -> Log Delivery
-2. Find the object you want to enable log delivery for. 
-    - Use the "View by" selector and search feature.
+2. Find the object you want to enable log delivery for. Use the "View by" selector and search feature.
 3. Click Action -> Start a log delivery -> New
 4. Configure logs
-  - `Start date`: When you want the delivery to start
-  - `Indefinite end date`: Leave this checked
-  - `Log format`: Choose this
-  - `Log identifier string`: Choose this. It's added to the log filenames
-  - `Aggregation type`: Aggregate by log arrival time ever 1 hour
+    - `Start date`: When you want the delivery to start
+    - `Indefinite end date`: Leave this checked
+    - `Log format`: Choose this
+    - `Log identifier string`: Choose this. It's added to the log filenames
+    - `Aggregation type`: Aggregate by log arrival time ever 1 hour
 5. Configure the delivery
     - `Type`: Akamai NetStorage 4
     - `NetStorage`: The CP code noted above
@@ -183,10 +183,18 @@ Finally, we'll enable the HTTP Event Collector endpoint
 
 Great job! Splunk is configured.
 
+Optional Configuration
+----------------------
+
+The script has an additional feature to send a given zone's EdgeDNS record set to Splunk. This requires configuring 
+Akamai API credentials, such that the script is able to fetch these records. These are different than the NetStorage 
+API credentials, and easier to configure. See the following instructions
+
+https://techdocs.akamai.com/developer/docs/set-up-authentication-credentials
+
 
 Connector Script
-======
-
+================
 
 Configuration
 -------------
@@ -207,19 +215,17 @@ How the connector script extracts the timestamp from the log lines is defined by
 This allows the connector script to support any LDS format without us having to maintain parsing logic for each. 
 We'll try to provide values for each LDS format, so you don't need to think too much about this. See the
 `timestamp_configs.md` document.
-- The `connector.timestamp_parse` value specifies where the timestamp is in the log line. It's backed by the 
+- The `lds.timestamp_parse` value specifies where the timestamp is in the log line. It's backed by the 
   [parse](https://pypi.org/project/parse/) package; you can read about the formatting specifics here. The format string 
   should contain a named field called `timestamp`.
-- The `connector.timestamp_strptime` value specifies how the timestamp is formatted. It's backed by the 
+- The `lds.timestamp_strptime` value specifies how the timestamp is formatted. It's backed by the 
   [datetime strptime()](https://docs.python.org/3/library/datetime.html) function.
 
 
 Installation
 ------------
 
-This package will eventually be ported to PyPI and installable via pip. 
-
-Note that I've only tested this script on macOS so far.
+This package will eventually be ported to PyPI and installable via pip. Note that I've only tested this script on macOS so far.
 
 First, create a virtual environment and activate it. 
 
@@ -228,14 +234,13 @@ splunk-lds-connector % python3 -m venv env
 splunk-lds-connector % source env/bin/activate
 ```
 
-Next, install the required packages.
+Next, install the required packages. 
 
 ```sh
 splunk-lds-connector % python3 -m pip install -r requirements.txt
 ```
 
-Optionally, run the unit tests. Make sure the last line says `OK` and not `FAILED`. Ignore the errors above the dashed 
-line; these are intentionally omitted during unit tests.
+Optionally, run the unit tests.
 
 ```sh
 splunk-lds-connector % python3 -m unittest discover -vb
@@ -275,11 +280,17 @@ Let's dig into how it works a bit.
 
 - The script is configured using a YAML file. This is passed as a command line argument. The script must be restarted
   to process any changes to the YAML file.
-- The script process the log files chronologically. The log files are named using 
+- The script processes the log files chronologically. The log files are named using 
   [a standard format](https://techdocs.akamai.com/log-delivery/docs/file-names) that contains the time range. 
   The script fetches the listing of available log files and sorts them by the start time. 
 - The script is able to resume processing where it left off. The script saves the current/last log file's metadata to 
   disk. When the script is first run, it checks the saved metadata and resumes where it left off.
+
+
+This script can optionally send EdgeDNS records for a given zone to Splunk.
+- The user enables EdgeDNS record sending for a given zone in the YAML config
+- The script periodically fetches the record set for the zone from an Akamai API, reformats them, and sends them to
+  Splunk
 
 
 Example Use Case
