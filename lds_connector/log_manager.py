@@ -143,7 +143,7 @@ class LogManager:
 
         next_log_file = self._determine_next_log()
         if not next_log_file:
-            logging.info("No log files to process")
+            logging.info('No log files to process')
             return None
 
         self._download(next_log_file)
@@ -282,7 +282,7 @@ class LogManager:
         root = ET.fromstring(response_xml)
 
         if root.tag != 'list':
-            logging.error("NetStorage list API returned unexpected XML: %s", response_xml)
+            logging.error('NetStorage list API returned unexpected XML: %s', response_xml)
             return []
 
         log_files = []
@@ -310,7 +310,7 @@ class LogManager:
                     )
                 )
             except KeyError as key_error:
-                logging.error("NetStorage list API file was missing key [%s]: %s", key_error, child.attrib)
+                logging.error('NetStorage list API file was missing key [%s]: %s', key_error, child.attrib)
 
         return log_files
 

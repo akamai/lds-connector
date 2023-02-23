@@ -1,20 +1,20 @@
 ---
 
 splunk :
-  host : "127.0.0.1"            # Splunk deployment's host name / IP
+  host : '127.0.0.1'            # Splunk deployment's host name / IP
   hec :
     port : 8088       # HEC port
-    token : ""        # HEC token
+    token : ''        # HEC token
     use_ssl : false   # Use SSL for HEC API
-    source_type: "lds_log_dns"    # Optional. Override HEC token default source type 
-    index: "sandbox"              # Optional. Override HEC token's default index. Must be in HEC token's allow list
+    source_type: 'lds_log_dns'    # Optional. Override HEC token default source type 
+    index: 'sandbox'              # Optional. Override HEC token's default index. Must be in HEC token's allow list
 
 akamai :
   netstorage : 
-    host : ""               # HTTP domain name
-    upload_account : ""     # Upload account ID
-    cp_code : ""            # Upload directory's CP code
-    key : ""                # HTTP CMS API key
+    host : ''               # HTTP domain name
+    upload_account : ''     # Upload account ID
+    cp_code : ''            # Upload directory's CP code
+    key : ''                # HTTP CMS API key
     use_ssl : false         # Use SSL for NetStorage API
     log_dir : 'logs'        # Log directory path
   edgedns : # Optional

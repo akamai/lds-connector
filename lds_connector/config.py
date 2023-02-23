@@ -75,44 +75,44 @@ class Config:
     poll_period_sec: int
 
 
-_KEY_AKAMAI = "akamai"
+_KEY_AKAMAI = 'akamai'
 
-_KEY_NS = "netstorage"
-_KEY_NS_HOST = "host"
-_KEY_NS_ACCOUNT = "upload_account"
-_KEY_NS_CP_CODE = "cp_code"
-_KEY_NS_KEY = "key"
-_KEY_NS_SSL = "use_ssl"
-_KEY_NS_LOG_DIR = "log_dir"
+_KEY_NS = 'netstorage'
+_KEY_NS_HOST = 'host'
+_KEY_NS_ACCOUNT = 'upload_account'
+_KEY_NS_CP_CODE = 'cp_code'
+_KEY_NS_KEY = 'key'
+_KEY_NS_SSL = 'use_ssl'
+_KEY_NS_LOG_DIR = 'log_dir'
 
-_KEY_EDGEDNS = "edgedns"
-_KEY_EDGEDNS_ZONE = "zone_name"
-_KEY_EDGEDNS_SEND_RECORDS = "send_records"
+_KEY_EDGEDNS = 'edgedns'
+_KEY_EDGEDNS_ZONE = 'zone_name'
+_KEY_EDGEDNS_SEND_RECORDS = 'send_records'
 
-_KEY_OPEN = "open"
-_KEY_OPEN_CLIENT_SECRET = "client_secret"
-_KEY_OPEN_HOST = "host"
-_KEY_OPEN_ACCESS_TOKEN = "access_token"
-_KEY_OPEN_CLIENT_TOKEN = "client_token"
-_KEY_OPEN_ACCOUNT_SWITCH_KEY = "account_switch_key"
-
-
-_KEY_SPLUNK = "splunk"
-_KEY_SPLUNK_HOST = "host"
-_KEY_SPLUNK_HEC = "hec"
-_KEY_SPLUNK_HEC_PORT = "port"
-_KEY_SPLUNK_HEC_TOKEN = "token"
-_KEY_SPLUNK_HEC_SSL = "use_ssl"
-_KEY_SPLUNK_HEC_SOURCE_TYPE = "source_type"
-_KEY_SPLUNK_HEC_INDEX = "index"
-_KEY_SPLUNK_HEC_BATCH_SIZE = "batch_size"
+_KEY_OPEN = 'open'
+_KEY_OPEN_CLIENT_SECRET = 'client_secret'
+_KEY_OPEN_HOST = 'host'
+_KEY_OPEN_ACCESS_TOKEN = 'access_token'
+_KEY_OPEN_CLIENT_TOKEN = 'client_token'
+_KEY_OPEN_ACCOUNT_SWITCH_KEY = 'account_switch_key'
 
 
-_KEY_CONNECTOR = "connector"
-_KEY_CONNECTOR_LOG_DIR = "log_download_dir"
-_KEY_CONNECTOR_TIMESTAMP_PARSE = "timestamp_parse"
-_KEY_CONNECTOR_TIMESTAMP_STRPTIME = "timestamp_strptime"
-_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = "log_poll_period_sec"
+_KEY_SPLUNK = 'splunk'
+_KEY_SPLUNK_HOST = 'host'
+_KEY_SPLUNK_HEC = 'hec'
+_KEY_SPLUNK_HEC_PORT = 'port'
+_KEY_SPLUNK_HEC_TOKEN = 'token'
+_KEY_SPLUNK_HEC_SSL = 'use_ssl'
+_KEY_SPLUNK_HEC_SOURCE_TYPE = 'source_type'
+_KEY_SPLUNK_HEC_INDEX = 'index'
+_KEY_SPLUNK_HEC_BATCH_SIZE = 'batch_size'
+
+
+_KEY_CONNECTOR = 'connector'
+_KEY_CONNECTOR_LOG_DIR = 'log_download_dir'
+_KEY_CONNECTOR_TIMESTAMP_PARSE = 'timestamp_parse'
+_KEY_CONNECTOR_TIMESTAMP_STRPTIME = 'timestamp_strptime'
+_KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = 'log_poll_period_sec'
 
 def _is_config_valid(config: Config) -> bool:
     if config.akamai.edgedns is not None:
@@ -198,5 +198,5 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
         logging.info('Parsed configuration from file')
         return config
     except KeyError as key_error:
-        logging.error("Configuration file missing key %s", key_error.args[0])
+        logging.error('Configuration file missing key %s', key_error.args[0])
         return None
