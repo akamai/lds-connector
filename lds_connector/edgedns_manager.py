@@ -40,30 +40,30 @@ class DnsRecord:
 
 class EdgeDnsManager():
     def __init__(self, config: Config):
-        assert config.akamai.edgedns is not None
-        assert config.akamai.edgedns.send_records
-        assert config.akamai.open is not None
+        assert config.edgedns is not None
+        assert config.edgedns.send_records
+        assert config.open is not None
 
-        self.records_url = f'https://{config.akamai.open.host}/config-dns/v2/zones/{config.akamai.edgedns.zone_name}/recordsets'
+        self.records_url = f'https://{config.open.host}/config-dns/v2/zones/{config.edgedns.zone_name}/recordsets'
 
         self.open_session = requests.Session()
         self.open_session.auth = EdgeGridAuth(
-            client_token=config.akamai.open.client_token,
-            client_secret=config.akamai.open.client_secret,
-            access_token=config.akamai.open.access_token
+            client_token=config.open.client_token,
+            client_secret=config.open.client_secret,
+            access_token=config.open.access_token
         )
 
         self.config = config
 
     def get_records(self) -> list[DnsRecord]:
-        assert self.config.akamai.edgedns is not None
-        assert self.config.akamai.open is not None
+        assert self.config.edgedns is not None
+        assert self.config.open is not None
 
         record_set = []
         query_params = {}
 
-        if self.config.akamai.open.account_switch_key is not None:
-            query_params['accountSwitchKey'] = self.config.akamai.open.account_switch_key
+        if self.config.open.account_switch_key is not None:
+            query_params['accountSwitchKey'] = self.config.open.account_switch_key
 
         # Fetch first page of DNS records
         response = self.open_session.get(url=self.records_url, params=query_params)
@@ -91,14 +91,14 @@ class EdgeDnsManager():
         return record_set
 
     def _parse_records(self, json_response) -> list[DnsRecord]:
-        assert self.config.akamai.edgedns is not None
+        assert self.config.edgedns is not None
 
         records = []
         time_fetched_sec = time.time()
         for json_record in json_response['recordsets']:
             try:
                 records.append(DnsRecord(
-                    zone=self.config.akamai.edgedns.zone_name,
+                    zone=self.config.edgedns.zone_name,
                     time_fetched_sec=time_fetched_sec,
                     name=json_record['name'],
                     type=json_record['type'],
@@ -112,6 +112,6 @@ class EdgeDnsManager():
 
 
 def create_edgedns_manager(config: Config) -> Optional[EdgeDnsManager]:
-    if config.akamai.edgedns is None or not config.akamai.edgedns.send_records:
+    if config.edgedns is None or not config.edgedns.send_records:
         return None
     return EdgeDnsManager(config)

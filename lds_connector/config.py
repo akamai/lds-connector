@@ -65,23 +65,16 @@ class AkamaiOpenConfig:
 
 
 @dataclass
-class AkamaiConfig:
+class Config:
+    splunk: SplunkConfig
     netstorage: NetStorageConfig
     edgedns: Optional[EdgeDnsConfig]
     open: Optional[AkamaiOpenConfig]
-
-
-@dataclass
-class Config:
-    splunk: SplunkConfig
-    akamai: AkamaiConfig
     log_download_dir: str
     timestamp_strptime: str
     timestamp_parse: str
     poll_period_sec: int
 
-
-_KEY_AKAMAI = 'akamai'
 
 _KEY_NS = 'netstorage'
 _KEY_NS_HOST = 'host'
@@ -123,8 +116,8 @@ _KEY_CONNECTOR_LOG_POLL_PERIOD_SEC = 'log_poll_period_sec'
 
 
 def _is_config_valid(config: Config) -> bool:
-    if config.akamai.edgedns is not None and config.akamai.edgedns.send_records:
-        if config.akamai.open is None:
+    if config.edgedns is not None and config.edgedns.send_records:
+        if config.open is None:
             logging.error('Invalid config. DNS record sending enabled but Akamai OPEN credentials not provided')
             return False
         if config.splunk.edgedns_hec is None:
@@ -150,34 +143,32 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
     yaml_config = yaml.safe_load(yaml_stream)
 
     try:
-        # Akamai Config
-        ns_yaml = yaml_config[_KEY_AKAMAI][_KEY_NS]
-        akamai_config = AkamaiConfig(
-                netstorage=NetStorageConfig(
-                    host=ns_yaml[_KEY_NS_HOST],
-                    account=ns_yaml[_KEY_NS_ACCOUNT],
-                    cp_code=ns_yaml[_KEY_NS_CP_CODE],
-                    key=ns_yaml[_KEY_NS_KEY],
-                    use_ssl=ns_yaml[_KEY_NS_SSL],
-                    log_dir=ns_yaml[_KEY_NS_LOG_DIR]
-                ),
-                edgedns=None,
-                open=None
+        # Akamai NetStorage Config
+        ns_yaml = yaml_config[_KEY_NS]
+        ns_config = NetStorageConfig(
+            host=ns_yaml[_KEY_NS_HOST],
+            account=ns_yaml[_KEY_NS_ACCOUNT],
+            cp_code=ns_yaml[_KEY_NS_CP_CODE],
+            key=ns_yaml[_KEY_NS_KEY],
+            use_ssl=ns_yaml[_KEY_NS_SSL],
+            log_dir=ns_yaml[_KEY_NS_LOG_DIR]
         )
 
         # Akamai EdgeDNS Config
-        edgedns_yaml = yaml_config[_KEY_AKAMAI].get(_KEY_EDGEDNS, None)
+        edgedns_yaml = yaml_config.get(_KEY_EDGEDNS, None)
+        edgedns_config = None
         if edgedns_yaml is not None:
-            akamai_config.edgedns = EdgeDnsConfig(
+            edgedns_config = EdgeDnsConfig(
                 send_records=edgedns_yaml[_KEY_EDGEDNS_SEND_RECORDS],
                 zone_name=edgedns_yaml[_KEY_EDGEDNS_ZONE]
             )
 
 
         # Akamai OPEN Config
-        open_yaml = yaml_config[_KEY_AKAMAI].get(_KEY_OPEN, None)
+        open_yaml = yaml_config.get(_KEY_OPEN, None)
+        open_config = None
         if open_yaml is not None:
-            akamai_config.open = AkamaiOpenConfig(
+            open_config = AkamaiOpenConfig(
                 client_secret=open_yaml[_KEY_OPEN_CLIENT_SECRET],
                 host=open_yaml[_KEY_OPEN_HOST],
                 access_token=open_yaml[_KEY_OPEN_ACCESS_TOKEN],
@@ -215,7 +206,9 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
 
         config = Config(
             splunk=splunk_config,
-            akamai=akamai_config,
+            netstorage=ns_config,
+            open=open_config,
+            edgedns=edgedns_config,
             log_download_dir=os.path.abspath(connector_yaml_config[_KEY_CONNECTOR_LOG_DIR]),
             timestamp_parse=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_PARSE],
             timestamp_strptime=connector_yaml_config[_KEY_CONNECTOR_TIMESTAMP_STRPTIME],

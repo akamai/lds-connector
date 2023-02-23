@@ -71,10 +71,10 @@ class LogManager:
         self.config = config
 
         self.netstorage = Netstorage(
-            hostname=self.config.akamai.netstorage.host,
-            keyname=self.config.akamai.netstorage.account,
-            key=self.config.akamai.netstorage.key,
-            ssl=self.config.akamai.netstorage.use_ssl
+            hostname=self.config.netstorage.host,
+            keyname=self.config.netstorage.account,
+            key=self.config.netstorage.key,
+            ssl=self.config.netstorage.use_ssl
         )
 
         self.resume_path = os.path.join(config.log_download_dir, LogManager._RESUME_PICKLE_FILE_NAME)
@@ -210,9 +210,9 @@ class LogManager:
         """
         logging.debug('Fetching available log files list from NetStorage')
 
-        ls_path = f'/{self.config.akamai.netstorage.cp_code}'
-        if self.config.akamai.netstorage.log_dir:
-            ls_path += f'/{self.config.akamai.netstorage.log_dir}'
+        ls_path = f'/{self.config.netstorage.cp_code}'
+        if self.config.netstorage.log_dir:
+            ls_path += f'/{self.config.netstorage.log_dir}'
 
         _, response = self.netstorage.list(ls_path)
         if response is None or response.status_code != 200:

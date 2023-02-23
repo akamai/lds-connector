@@ -44,8 +44,8 @@ class ConnectorTest(unittest.TestCase):
 
     def test_run_single_log(self):
         config = test_data.create_config()
-        assert config.akamai.edgedns is not None
-        config.akamai.edgedns.send_records = False
+        assert config.edgedns is not None
+        config.edgedns.send_records = False
         connector = Connector(config)
 
         log_file = test_data.get_ns_file1()
@@ -67,8 +67,8 @@ class ConnectorTest(unittest.TestCase):
 
     def test_run_multiple_logs(self):
         config = test_data.create_config()
-        assert config.akamai.edgedns is not None
-        config.akamai.edgedns.send_records = False
+        assert config.edgedns is not None
+        config.edgedns.send_records = False
         connector = Connector(config)
 
         log_file1 = test_data.get_ns_file1()
@@ -98,8 +98,8 @@ class ConnectorTest(unittest.TestCase):
 
     def test_run_no_logs(self):
         config = test_data.create_config()
-        assert config.akamai.edgedns is not None
-        config.akamai.edgedns.send_records = False
+        assert config.edgedns is not None
+        config.edgedns.send_records = False
         connector = Connector(config)
 
         connector.log_manager.get_next_log = MagicMock(return_value=None)
@@ -113,8 +113,8 @@ class ConnectorTest(unittest.TestCase):
 
     def test_run_unexpected_error(self):
         config = test_data.create_config()
-        assert config.akamai.edgedns is not None
-        config.akamai.edgedns.send_records = False
+        assert config.edgedns is not None
+        config.edgedns.send_records = False
         connector = Connector(config)
 
         log_file1 = test_data.get_ns_file1()
@@ -149,8 +149,8 @@ class ConnectorTest(unittest.TestCase):
         total_lines = 15
 
         config = test_data.create_config()
-        assert config.akamai.edgedns is not None
-        config.akamai.edgedns.send_records = False
+        assert config.edgedns is not None
+        config.edgedns.send_records = False
         connector = Connector(config)
 
         log_file = test_data.get_ns_file1()

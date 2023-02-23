@@ -20,22 +20,21 @@ splunk :
     token : 'test_edgedns_hec_token'
     batch_size : 10
 
-akamai :
-  netstorage : 
-    host : "test_ns_host"
-    upload_account : "test_ns_account"
-    cp_code : 123456
-    key : "test_key"
-    use_ssl : true
-    log_dir : 'logs1'
-  edgedns :
-    send_records : true
-    zone_name : 'edgedns.zone'
-  open :
-    client_secret : 'test_client_secret'
-    host : 'test_host'
-    access_token : 'test_access_token'
-    client_token : 'test_client_token'
+netstorage : 
+  host : "test_ns_host"
+  upload_account : "test_ns_account"
+  cp_code : 123456
+  key : "test_key"
+  use_ssl : true
+  log_dir : 'logs1'
+edgedns :
+  send_records : true
+  zone_name : 'edgedns.zone'
+open :
+  client_secret : 'test_client_secret'
+  host : 'test_host'
+  access_token : 'test_access_token'
+  client_token : 'test_client_token'
 
 connector :
   log_download_dir : "logs2"

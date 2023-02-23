@@ -9,14 +9,13 @@ splunk :
   lds_hec :
     token : "test_lds_hec_token"
 
-akamai :
-  netstorage : 
-    host : "test_ns_host"
-    upload_account : "test_ns_account"
-    cp_code : 123456
-    key : "test_key"
-    use_ssl : true
-    log_dir : 'logs1'
+netstorage : 
+  host : "test_ns_host"
+  upload_account : "test_ns_account"
+  cp_code : 123456
+  key : "test_key"
+  use_ssl : true
+  log_dir : 'logs1'
 
 connector :
   log_download_dir : "logs2"
