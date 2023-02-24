@@ -17,10 +17,8 @@
 
 import logging
 import time
-import dataclasses
 from dataclasses import dataclass
 from typing import Optional
-import json
 
 import requests
 from akamai.edgegrid import EdgeGridAuth
