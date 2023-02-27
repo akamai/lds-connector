@@ -1,9 +1,9 @@
 ---
 
-# splunk.edgedns_hec not set, but akamai.edgedns.send_records is true
+# Edge DNS record sending enabled, but Edge DNS HEC token missing
 
 splunk :
-  host : "127.0.0.1"
+  host : '127.0.0.1'
   hec_port : 8088
   hec_use_ssl : false
   lds_hec :
@@ -11,6 +11,13 @@ splunk :
     index: 'sandbox'
     token : 'test_lds_hec_token'
     batch_size : 8
+
+syslog :
+  host : '192.168.0.1'
+  port: 514
+  use_tcp : false
+  lds_app_name : 'test_lds_app_name'
+  edgedns_app_name : 'test_edgedns_app_name'
 
 edgedns :
   send_records : true
@@ -26,13 +33,13 @@ open :
 
 lds :
   ns : 
-    host : "test_ns_host"
-    upload_account : "test_ns_account"
+    host : 'test_ns_host'
+    upload_account : 'test_ns_account'
     cp_code : 123456
-    key : "test_key"
+    key : 'test_key'
     use_ssl : true
     log_dir : 'logs1'
-  log_download_dir : "logs2"
-  timestamp_parse: "{} - {} {timestamp},{}"
-  timestamp_strptime: "%d/%m/%Y %H:%M:%S"
+  log_download_dir : 'logs2'
+  timestamp_parse: '{} - {} {timestamp},{}'
+  timestamp_strptime: '%d/%m/%Y %H:%M:%S'
   log_poll_period_sec: 60

@@ -1,21 +1,6 @@
 ---
 
-# All parameters are set
-
-splunk :
-  host : '127.0.0.1'
-  hec_port : 8088
-  hec_use_ssl : false
-  lds_hec :
-    source_type: 'lds_log_dns'
-    index: 'sandbox'
-    token : 'test_lds_hec_token'
-    batch_size : 8
-  edgedns_hec :
-    source_type: 'edgedns_record'
-    index: 'sandbox'
-    token : 'test_edgedns_hec_token'
-    batch_size : 10
+# Only SysLog enabled
 
 syslog :
   host : '192.168.0.1'

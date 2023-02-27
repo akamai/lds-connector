@@ -63,6 +63,7 @@ class Splunk:
             'source': 'lds-connector',
             'event': log_line
         }
+        assert self.config.splunk is not None
         if self.config.splunk.lds_hec.source_type:
             hec_json['sourcetype'] = self.config.splunk.lds_hec.source_type
         if self.config.splunk.lds_hec.index:
@@ -87,6 +88,7 @@ class Splunk:
             'event': dns_record
         }
 
+        assert self.config.splunk is not None
         assert self.config.splunk.edgedns_hec is not None
         if self.config.splunk.edgedns_hec.source_type:
             hec_json['sourcetype'] = self.config.splunk.edgedns_hec.source_type
@@ -105,6 +107,7 @@ class Splunk:
         Returns:
             bool: If events were published, true. Otherwise, false.
         """
+        assert self.config.splunk is not None
         return self._publish(
             queue=self.log_queue,
             batch_size=self.config.splunk.lds_hec.event_batch_size,
@@ -121,6 +124,7 @@ class Splunk:
         Returns:
             bool: If events were published, true. Otherwise, false.
         """
+        assert self.config.splunk is not None
         assert self.config.splunk.edgedns_hec is not None
         return self._publish(
             queue=self.dns_queue,
@@ -146,6 +150,7 @@ class Splunk:
         if len(queue) < batch_size and not force:
             return False
 
+        assert self.config.splunk is not None
         protocol = "https://" if self.config.splunk.hec_use_ssl else "http://"
         baseurl = f'{protocol}{self.config.splunk.host}:{self.config.splunk.hec_port}'
         url = urljoin(baseurl, Splunk._HEC_ENDPOINT)

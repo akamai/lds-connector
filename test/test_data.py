@@ -56,6 +56,13 @@ def create_config():
                 event_batch_size=10
             )
         ),
+        syslog=SysLogConfig(
+            host='192.168.0.1',
+            port=514,
+            use_tcp=False,
+            lds_app_name='test_lds_app_name',
+            edgedns_app_name='test_edgedns_app_name'
+        ),
         edgedns=EdgeDnsConfig(
             send_records=True,
             zone_name='edgedns.zone',

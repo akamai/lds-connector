@@ -1,6 +1,6 @@
 ---
 
-# All parameters are set
+# Edge DNS record sending enabled, but open config missing
 
 splunk :
   host : '127.0.0.1'
@@ -28,13 +28,6 @@ edgedns :
   send_records : true
   zone_name : 'edgedns.zone'
   poll_period_sec : 3600
-
-open :
-  client_secret : 'test_client_secret'
-  host : 'test_host'
-  access_token : 'test_access_token'
-  client_token : 'test_client_token'
-  account_switch_key : 'test_account_switch_key'
 
 lds :
   ns : 

@@ -9,7 +9,7 @@ splunk : # Splunk configuration
     source_type: 'lds_log_dns'    # Optional. Override HEC token default source type 
     index: 'sandbox'              # Optional. Override HEC token's default index. Must be in HEC token's allow list
     batch_size: 20                # Optional. Default 10. Number of events to send Splunk in single request
-  edgedns_hec :
+  edgedns_hec : # Optional
     token : ''                    # HEC token for EdgeDNS zone records
     source_type: 'edgedns_log'    # Optional. Override HEC token default source type 
     index: 'sandbox'              # Optional. Override HEC token's default index. Must be in HEC token's allow list
