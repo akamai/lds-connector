@@ -1,0 +1,33 @@
+<!-- Local Decoders -->
+
+<!-- Modify it at your will. -->
+<!-- Copyright (C) 2015, Wazuh Inc. -->
+
+<!--
+  - Allowed static fields:
+  - location   - where the log came from (only on FTS)
+  - srcuser    - extracts the source username
+  - dstuser    - extracts the destination (target) username
+  - user       - an alias to dstuser (only one of the two can be used)
+  - srcip      - source ip
+  - dstip      - dst ip
+  - srcport    - source port
+  - dstport    - destination port
+  - protocol   - protocol
+  - id         - event id
+  - url        - url of the event
+  - action     - event action (deny, drop, accept, etc)
+  - status     - event status (success, failure, etc)
+  - extra_data - Any extra data
+-->
+
+<!-- 2023 Jan 03 03:06:39 localhost lds_dns: 416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,64062,2ww-nigiro.edgedns.zone,IN,A,E,4096,D,,3:NXDOMAIN   -->
+<decoder name="lds_dns_decoder">
+    <program_name>lds_dns</program_name>
+</decoder>
+
+<decoder name="lds_dns_fields">
+    <parent>lds_dns_decoder</parent>
+    <regex type="pcre2" offset="after_parent">^(\d{6})\s-\s(\d{10})\s\d\d\/\d\d\/\d{4}\s\d\d:\d\d:\d\d,([a-zA-Z0-9:.]+),(\d+),([\w\-.]+),(\w*),(\w*),(E?),(\d*),(D?),(T?),(.*)</regex>
+    <order>cp_code,timestamp,src_ip,src_port,domain_name,dns_class,rr_type,edns0_flag,edns0_size,dnssec_flag,tcp_flag,answer</order>
+</decoder>
