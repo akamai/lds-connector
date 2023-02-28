@@ -37,7 +37,7 @@ NS_LIST_RESPONSE = """<?xml version="1.0" encoding="ISO-8859-1"?>
 </list>"""
 
 
-def create_config():
+def create_splunk_config():
     return Config(
         splunk=SplunkConfig(
             host="127.0.0.1",
@@ -56,13 +56,7 @@ def create_config():
                 event_batch_size=10
             )
         ),
-        syslog=SysLogConfig(
-            host='192.168.0.1',
-            port=514,
-            use_tcp=False,
-            lds_app_name='test_lds_app_name',
-            edgedns_app_name='test_edgedns_app_name'
-        ),
+        syslog=None,
         edgedns=EdgeDnsConfig(
             send_records=True,
             zone_name='edgedns.zone',
@@ -90,6 +84,21 @@ def create_config():
             poll_period_sec=60
         )
     )
+
+
+def create_syslog_config():
+    config = create_splunk_config()
+
+    config.splunk = None
+    config.syslog = SysLogConfig(
+        host='192.168.0.1',
+        port=514,
+        use_tcp=False,
+        lds_app_name='test_lds_app_name',
+        edgedns_app_name='test_edgedns_app_name'
+    )
+
+    return config
 
 
 def get_ns_file1():

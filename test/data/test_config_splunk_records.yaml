@@ -1,31 +1,33 @@
 ---
 
-# Deepest optionals aren't set 
+# Deliver to Splunk. Send Edge DNS records
 
 splunk :
   host : '127.0.0.1'
   hec_port : 8088
   hec_use_ssl : false
   lds_hec :
+    source_type: 'lds_log_dns'
+    index: 'sandbox'
     token : 'test_lds_hec_token'
+    batch_size : 8
   edgedns_hec :
+    source_type: 'edgedns_record'
+    index: 'sandbox'
     token : 'test_edgedns_hec_token'
-
-syslog :
-  host : '192.168.0.1'
-  port: 514
-  use_tcp : false
-  lds_app_name : 'test_lds_app_name'
+    batch_size : 10
 
 edgedns :
-  send_records : false
+  send_records : true
   zone_name : 'edgedns.zone'
+  poll_period_sec : 3600
 
 open :
   client_secret : 'test_client_secret'
   host : 'test_host'
   access_token : 'test_access_token'
   client_token : 'test_client_token'
+  account_switch_key : 'test_account_switch_key'
 
 lds :
   ns : 
@@ -38,3 +40,4 @@ lds :
   log_download_dir : 'logs2'
   timestamp_parse: '{} - {} {timestamp},{}'
   timestamp_strptime: '%d/%m/%Y %H:%M:%S'
+  log_poll_period_sec: 60

@@ -43,7 +43,7 @@ class ConnectorTest(unittest.TestCase):
             shutil.rmtree(test_data.TEMP_DIR)
 
     def test_run_single_log(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -66,7 +66,7 @@ class ConnectorTest(unittest.TestCase):
         # TODO: Assert call count
 
     def test_run_multiple_logs(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -97,7 +97,7 @@ class ConnectorTest(unittest.TestCase):
         self.assertEqual(connector.splunk._post.call_count, 4)
 
     def test_run_no_logs(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -112,7 +112,7 @@ class ConnectorTest(unittest.TestCase):
         connector.splunk._post.assert_not_called()
 
     def test_run_unexpected_error(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -148,7 +148,7 @@ class ConnectorTest(unittest.TestCase):
         lines_already_processed = 7
         total_lines = 15
 
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -172,7 +172,7 @@ class ConnectorTest(unittest.TestCase):
         self.assertEqual(connector.splunk._post.call_count, 1)
 
     def test_process_dns_records(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         connector = Connector(config)
 
         connector.log_manager.get_next_log = MagicMock(return_value=None)

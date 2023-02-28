@@ -1,6 +1,6 @@
 ---
 
-# No Edge DNS config 
+# Deliver to Splunk. No Edge DNS records
 
 splunk :
   host : '127.0.0.1'
@@ -11,12 +11,6 @@ splunk :
     index: 'sandbox'
     token : 'test_lds_hec_token'
     batch_size : 8
-
-syslog :
-  host : '192.168.0.1'
-  port: 514
-  use_tcp : false
-  lds_app_name : 'test_lds_app_name'
 
 lds :
   ns : 

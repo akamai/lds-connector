@@ -95,7 +95,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(log_files, [file2])
 
     def test_determine_next_log_fresh(self):
-        log_manager = LogManager(test_data.create_config())
+        log_manager = LogManager(test_data.create_splunk_config())
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
@@ -104,7 +104,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(next_log, test_data.get_ns_file1())
 
     def test_determine_next_log_skip_older_time(self):
-        log_manager = LogManager(test_data.create_config())
+        log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file1()
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
@@ -114,7 +114,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(next_log, test_data.get_ns_file2())
 
     def test_determine_next_log_skip_older_part(self):
-        log_manager = LogManager(test_data.create_config())
+        log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file2()
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
@@ -124,7 +124,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(next_log, test_data.get_ns_file3())
 
     def test_determine_next_log_all_done(self):
-        log_manager = LogManager(test_data.create_config())
+        log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file3()
 
         log_manager._list = MagicMock(return_value = \
@@ -135,7 +135,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNone(next_log)
 
     def test_determine_next_log_none(self):
-        log_manager = LogManager(test_data.create_config())
+        log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file3()
 
         log_manager._list = MagicMock(return_value = [])
@@ -145,7 +145,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNone(next_log)
 
     def test_determine_next_log_choose_first_part(self):
-        log_manager = LogManager(test_data.create_config())
+        log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file1()
 
         log_manager._list = MagicMock(return_value = \
@@ -156,7 +156,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(next_log, test_data.get_ns_file2())
 
     def test_get_next_log(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
@@ -184,7 +184,7 @@ class LogManagerTest(unittest.TestCase):
         with open(test_data.RESUME_PATH, 'wb') as file:
             pickle.dump(resume_data, file)
 
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
 
         log_manager = LogManager(config)
@@ -200,7 +200,7 @@ class LogManagerTest(unittest.TestCase):
         with open(test_data.RESUME_PATH, 'wb') as file:
             pickle.dump(resume_data, file)
 
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
@@ -218,7 +218,7 @@ class LogManagerTest(unittest.TestCase):
         with open(test_data.RESUME_PATH, 'wb') as file:
             pickle.dump(resume_data, file)
 
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 
@@ -246,7 +246,7 @@ class LogManagerTest(unittest.TestCase):
         with open(test_data.RESUME_PATH, 'wb') as file:
             pickle.dump(resume_data, file)
 
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
 

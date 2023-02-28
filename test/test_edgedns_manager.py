@@ -37,7 +37,7 @@ class MockResponse(requests.Response):
 class EdgeDnsManagerTest(unittest.TestCase):
 
     def test_get_records_single_page(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         edgedns_manager = EdgeDnsManager(config)
 
         edgedns_manager.open_session.get = MagicMock(
@@ -57,7 +57,7 @@ class EdgeDnsManagerTest(unittest.TestCase):
         self.assertEqual(actual_records, expected_records)
 
     def test_get_records_multiple_pages(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         edgedns_manager = EdgeDnsManager(config)
 
         edgedns_manager.open_session.get = MagicMock(

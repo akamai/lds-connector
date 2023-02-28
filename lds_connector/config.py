@@ -136,14 +136,21 @@ _KEY_NS_SSL = 'use_ssl'
 _KEY_NS_LOG_DIR = 'log_dir'
 
 
-def _is_config_valid(config: Config) -> bool:
+def is_config_valid(config: Config) -> bool:
     if config.splunk is None and config.syslog is None:
         logging.error('Invalid config. No destinations configured')
+        return False
+
+    if config.splunk is not None and config.syslog is not None:
+        logging.error('Invalid config. Only one destination (Splunk or SysLog) can be configured')
         return False
 
     if config.edgedns is not None and config.edgedns.send_records:
         if config.open is None:
             logging.error('Invalid config. DNS record sending enabled but Akamai OPEN credentials not provided')
+            return False
+        if config.edgedns.zone_name is None:
+            logging.error('Invalid config. DNS record sending enabled but no zone provided')
             return False
         if config.splunk is not None and config.splunk.edgedns_hec is None:
             logging.error('Invalid config. DNS record sending enabled but Splunk HEC token not provided')
@@ -259,7 +266,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             open=open_config
         )
 
-        if not _is_config_valid(config):
+        if not is_config_valid(config):
             return None
 
         logging.info('Parsed configuration from file')

@@ -1,6 +1,6 @@
 ---
 
-# Only Splunk enabled
+# Deliver to Splunk. Send Edge DNS records
 
 splunk :
   host : '127.0.0.1'
@@ -40,4 +40,3 @@ lds :
   log_download_dir : 'logs2'
   timestamp_parse: '{} - {} {timestamp},{}'
   timestamp_strptime: '%d/%m/%Y %H:%M:%S'
-  log_poll_period_sec: 60

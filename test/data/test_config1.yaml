@@ -17,13 +17,6 @@ splunk :
     token : 'test_edgedns_hec_token'
     batch_size : 10
 
-syslog :
-  host : '192.168.0.1'
-  port: 514
-  use_tcp : false
-  lds_app_name : 'test_lds_app_name'
-  edgedns_app_name : 'test_edgedns_app_name'
-
 edgedns :
   send_records : true
   zone_name : 'edgedns.zone'

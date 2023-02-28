@@ -38,7 +38,7 @@ class SplunkTest(unittest.TestCase):
     ]
 
     def test_parse_timestamp(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         splunk = Splunk(config)
 
         for (expected_timestamp, log_line) in SplunkTest._TIMESTAMP_TO_LOG_LINE:
@@ -46,7 +46,7 @@ class SplunkTest(unittest.TestCase):
             self.assertEqual(actual_timestamp, expected_timestamp)
 
     def test_parse_timestamp_epoch(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         config.lds.timestamp_parse = '{} - {timestamp} {}'
         config.lds.timestamp_strptime = '%s'
         splunk = Splunk(config)
@@ -57,14 +57,14 @@ class SplunkTest(unittest.TestCase):
 
     def test_parse_all_logs(self):
         # Test parsing on real log data. Ensure no exceptions are thrown
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         splunk = Splunk(config)
 
         for log_line in SplunkTest.read_log_lines():
             splunk._parse_timestamp(log_line)
 
     def test_publish_logs(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         config.splunk.lds_hec.event_batch_size = 1
 
@@ -93,7 +93,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     def test_publish_records(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         assert config.splunk.edgedns_hec is not None
         config.splunk.edgedns_hec.event_batch_size = 1
@@ -118,7 +118,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     def test_publish_logs_no_optionals(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         config.splunk.lds_hec.source_type = None
         config.splunk.lds_hec.index = None
@@ -147,7 +147,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     def test_publish_records_no_optionals(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         assert config.splunk.edgedns_hec is not None
         config.splunk.edgedns_hec.source_type = None
@@ -174,7 +174,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     def test_publish_logs_no_events(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         config.splunk.lds_hec.event_batch_size = 1
 
@@ -186,7 +186,7 @@ class SplunkTest(unittest.TestCase):
         splunk._post.assert_not_called()
 
     def test_publish_records_no_events(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         assert config.splunk.edgedns_hec is not None
         config.splunk.edgedns_hec.event_batch_size = 1
@@ -199,7 +199,7 @@ class SplunkTest(unittest.TestCase):
         splunk._post.assert_not_called()
 
     def test_publish_logs_not_full_batch(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         config.splunk.lds_hec.event_batch_size = 3
 
@@ -217,7 +217,7 @@ class SplunkTest(unittest.TestCase):
         splunk._post.assert_not_called()
 
     def test_publish_records_not_full_batch(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         assert config.splunk.edgedns_hec is not None
         config.splunk.edgedns_hec.event_batch_size = 3
@@ -236,7 +236,7 @@ class SplunkTest(unittest.TestCase):
         splunk._post.assert_not_called()
 
     def test_publish_logs_full_batch(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         config.splunk.lds_hec.event_batch_size = 3
 
@@ -272,7 +272,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     def test_publish_records_full_batch(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         assert config.splunk.edgedns_hec is not None
         config.splunk.edgedns_hec.event_batch_size = 3
@@ -309,7 +309,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     def test_publish_logs_force_not_full_batch(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         config.splunk.lds_hec.event_batch_size = 3
 
@@ -342,7 +342,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     def test_publish_records_force_not_full_batch(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.splunk is not None
         assert config.splunk.edgedns_hec is not None
         config.splunk.edgedns_hec.event_batch_size = 3
