@@ -23,6 +23,8 @@ from .config import Config
 from .log_manager import LogManager, LogFile
 from .splunk import Splunk
 from .edgedns_manager import EdgeDnsManager, create_edgedns_manager
+from .handler import Handler
+from .syslog import SysLog
 
 
 class Connector:
@@ -33,8 +35,14 @@ class Connector:
     def __init__(self, config: Config):
         self.config = config
         self.log_manager: LogManager = LogManager(config)
-        self.splunk: Splunk = Splunk(config)
         self.edgedns: Optional[EdgeDnsManager] = create_edgedns_manager(config)
+        self.event_handler: Handler
+
+        if config.splunk is not None:
+            self.event_handler = Splunk(config)
+        if config.syslog is not None:
+            self.event_handler = SysLog(config)
+        assert self.event_handler is not None
 
     def process_dns_records(self) -> None:
         """
@@ -49,10 +57,10 @@ class Connector:
         # TODO: get_records should return records page-by-page
 
         for record in records:
-            self.splunk.add_dns_record(record)
-            self.splunk.publish_dns_records()
+            self.event_handler.add_dns_record(record)
+            self.event_handler.publish_dns_records()
 
-        self.splunk.publish_dns_records(force=True)
+        self.event_handler.publish_dns_records(force=True)
 
         logging.info('Processed DNS records')
 
@@ -89,17 +97,21 @@ class Connector:
                 log_line = file.readline()
                 line_number = 0
                 while log_line:
+                    if not log_line[-1] == '\n':
+                        logging.warning('Log line was missing new line. Adding it')
+                        log_line += '\n'
                     line_number += 1
                     if line_number > log_file.last_processed_line:
                         # Only handle lines that haven't been processed already
-                        self.splunk.add_log_line(log_line)
-                        if self.splunk.publish_log_lines():
+
+                        self.event_handler.add_log_line(log_line)
+                        if self.event_handler.publish_log_lines():
                             log_file.last_processed_line = line_number
 
                     log_line = file.readline()
 
                 # Publish remaining log lines
-                if self.splunk.publish_log_lines(force=True):
+                if self.event_handler.publish_log_lines(force=True):
                     log_file.last_processed_line = line_number
                 log_file.processed = True
 
@@ -111,6 +123,6 @@ class Connector:
                 # Only update resume save file if some lines were processed
                 # If multiple log files fail (say Splunk is down), we want to resume at the first failing log file
                 self.log_manager.save_resume_data()
-            self.splunk.clear()
+            self.event_handler.clear()
             logging.info('Processed log file %s. Finished processing: %s. Last line processed: %d', \
                 log_file.local_path_txt, log_file.processed, log_file.last_processed_line)

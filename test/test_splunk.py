@@ -18,10 +18,11 @@
 import unittest
 from unittest.mock import MagicMock
 from os import path
-from test import test_data
 import socket
 import json
 from typing import Any
+
+from test import test_data
 
 from lds_connector.splunk import Splunk
 from lds_connector.json import CustomJsonEncoder
@@ -31,10 +32,10 @@ class SplunkTest(unittest.TestCase):
     _TEST_LOG_FILENAME = path.abspath(path.join(path.dirname(__file__), 'data/test_logs.txt'))
 
     _TIMESTAMP_TO_LOG_LINE = [
-        (1672715199.0, '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,52149,edgedns.zone,IN,CAA,E,4096,D,,300:0 issue "ca.sectigo.com" 300:0 issue "ca.digicert.com" SIGNx1 '),
-        (1672715199.0, '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,64062,2ww-nigiro.edgedns.zone,IN,A,E,4096,D,,3:NXDOMAIN '),
-        (1672715199.0, '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,43215,edgedns.zone,IN,NS,E,4096,D,,86400:a13-67.akam.net 86400:a11-66.akam.net 86400:a22-64.akam.net 86400:a24-65.akam.net 86400:a28-66.akam.net 86400:a1-247.akam.net SIGNx1 '),
-        (1672713883.0, '416458 - 1672713883 03/01/2023 02:44:43,2600:1406:1a00:2::687d:da8c,44473,edgedns.zone,IN,SOA,,,,,86400:a1-247.akam.net hostmaster.edgedns.zone 2019102599 3600 600 604800 300 ')
+        (1672715199.0, test_data.DNS_LOG_LINES[0]),
+        (1672715199.0, test_data.DNS_LOG_LINES[1]),
+        (1672715199.0, test_data.DNS_LOG_LINES[2]),
+        (1672713883.0, test_data.DNS_LOG_LINES[3])
     ]
 
     def test_parse_timestamp(self):

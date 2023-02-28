@@ -28,8 +28,9 @@ import requests
 from .config import Config
 from .edgedns_manager import DnsRecord
 from .json import CustomJsonEncoder
+from .handler import Handler
 
-class Splunk:
+class Splunk(Handler):
     """
     Splunk log line handler. Responsible for converting log lines to Splunk events
     """
@@ -140,6 +141,7 @@ class Splunk:
         Returns: None
         """
         self.log_queue.clear()
+        self.dns_queue.clear()
 
     def _publish(self, queue: list[dict[str, Any]], batch_size: int, token: str, force: bool):
         logging.debug('Publishing events to Splunk')
