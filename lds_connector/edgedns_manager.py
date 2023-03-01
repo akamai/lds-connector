@@ -17,23 +17,13 @@
 
 import logging
 import time
-from dataclasses import dataclass
 from typing import Optional
 
 import requests
 from akamai.edgegrid import EdgeGridAuth
 
 from .config import Config
-
-
-@dataclass
-class DnsRecord:
-    time_fetched_sec: float
-    zone: str
-    name: str
-    type: str
-    ttl_sec: int
-    rdata: list[str]
+from .dns_record import DnsRecord
 
 
 class EdgeDnsManager():
@@ -90,6 +80,7 @@ class EdgeDnsManager():
 
     def _parse_records(self, json_response) -> list[DnsRecord]:
         assert self.config.edgedns is not None
+        assert self.config.edgedns.zone_name is not None
 
         records = []
         time_fetched_sec = time.time()

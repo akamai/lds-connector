@@ -17,13 +17,14 @@
 
 import json
 import logging
-from logging.handlers import SysLogHandler
 import socket
+from logging.handlers import SysLogHandler
 
-from .handler import Handler
 from .config import Config
-from .edgedns_manager import DnsRecord
+from .dns_record import DnsRecord
+from .handler import Handler
 from .json import CustomJsonEncoder
+
 
 class SysLog(Handler):
     _APP_NAME_ARG = 'app_name'

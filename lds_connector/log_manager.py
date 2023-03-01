@@ -21,7 +21,6 @@ import os
 import pickle
 import shutil
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from gzip import GzipFile
 from typing import Optional
@@ -30,37 +29,13 @@ import parse
 from akamai.netstorage import Netstorage
 
 from .config import Config
-
-
-@dataclass
-class LogNameProps:
-    customer_id: str
-    cp_code: int
-    format: str
-    sorted: bool
-    start_time: float
-    part: int
-    encoding: str
-
-
-@dataclass
-class LogFile:
-    ns_path_gz: str
-    filename_gz: str
-    size: int
-    md5: str
-    name_props: LogNameProps
-    local_path_gz: str
-    local_path_txt: str
-    last_processed_line: int
-    processed: bool
+from .log_file import LogFile, LogNameProps
 
 
 class LogManager:
     """
     Log manager responsible for fetching, preparing, and cleaning up log files
     """
-    
     _RESUME_PICKLE_FILE_NAME = 'resume.pickle'
 
     def __init__(self, config: Config):

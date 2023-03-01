@@ -20,10 +20,11 @@ import os
 from typing import Optional
 
 from .config import Config
-from .log_manager import LogManager, LogFile
-from .splunk import Splunk
 from .edgedns_manager import EdgeDnsManager, create_edgedns_manager
 from .handler import Handler
+from .log_file import LogFile
+from .log_manager import LogManager
+from .splunk import Splunk
 from .syslog import SysLog
 
 

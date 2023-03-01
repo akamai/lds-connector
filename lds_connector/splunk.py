@@ -15,20 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import socket
 from datetime import datetime, timezone
-from urllib.parse import urljoin
-import json
 from typing import Any
+from urllib.parse import urljoin
 
 import parse
 import requests
 
 from .config import Config
-from .edgedns_manager import DnsRecord
-from .json import CustomJsonEncoder
+from .dns_record import DnsRecord
 from .handler import Handler
+from .json import CustomJsonEncoder
+
 
 class Splunk(Handler):
     """

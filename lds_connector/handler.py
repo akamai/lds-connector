@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from .edgedns_manager import DnsRecord
+from .dns_record import DnsRecord
 
 class Handler(metaclass = ABCMeta):
 
