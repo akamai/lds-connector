@@ -36,7 +36,7 @@ class SysLogTest(unittest.TestCase):
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_LINES[0])
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
         syslog_handler.publish_log_lines()
 
         expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_LINES[0])
@@ -69,7 +69,7 @@ class SysLogTest(unittest.TestCase):
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_LINES[0])
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
         syslog_handler.publish_log_lines()
 
         expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_LINES[0])
@@ -121,9 +121,9 @@ class SysLogTest(unittest.TestCase):
         mock_socket.return_value = mock_socket_inst
 
         syslog_handler = SysLog(config)
-        syslog_handler.add_log_line(test_data.DNS_LOG_LINES[0])
-        syslog_handler.add_log_line(test_data.DNS_LOG_LINES[1])
-        syslog_handler.add_log_line(test_data.DNS_LOG_LINES[2])
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[1])
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[2])
         syslog_handler.publish_log_lines()
 
         assert config.syslog is not None
@@ -167,8 +167,8 @@ class SysLogTest(unittest.TestCase):
         syslog_handler = SysLog(config)
         syslog_handler.syslogger = MagicMock()
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_LINES[0])
-        syslog_handler.add_log_line(test_data.DNS_LOG_LINES[1])
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[1])
         syslog_handler.clear()
         syslog_handler.publish_log_lines()
 

@@ -28,41 +28,9 @@ from lds_connector.splunk import Splunk
 from lds_connector.json import CustomJsonEncoder
 from lds_connector.config import Config
 
+
 class SplunkTest(unittest.TestCase):
     _TEST_LOG_FILENAME = path.abspath(path.join(path.dirname(__file__), 'data/test_logs.txt'))
-
-    _TIMESTAMP_TO_LOG_LINE = [
-        (1672715199.0, test_data.DNS_LOG_LINES[0]),
-        (1672715199.0, test_data.DNS_LOG_LINES[1]),
-        (1672715199.0, test_data.DNS_LOG_LINES[2]),
-        (1672713883.0, test_data.DNS_LOG_LINES[3])
-    ]
-
-    def test_parse_timestamp(self):
-        config = test_data.create_splunk_config()
-        splunk = Splunk(config)
-
-        for (expected_timestamp, log_line) in SplunkTest._TIMESTAMP_TO_LOG_LINE:
-            actual_timestamp = splunk._parse_timestamp(log_line)
-            self.assertEqual(actual_timestamp, expected_timestamp)
-
-    def test_parse_timestamp_epoch(self):
-        config = test_data.create_splunk_config()
-        config.lds.timestamp_parse = '{} - {timestamp} {}'
-        config.lds.timestamp_strptime = '%s'
-        splunk = Splunk(config)
-
-        for (expected_timestamp, log_line) in SplunkTest._TIMESTAMP_TO_LOG_LINE:
-            actual_timestamp = splunk._parse_timestamp(log_line)
-            self.assertEqual(actual_timestamp, expected_timestamp)
-
-    def test_parse_all_logs(self):
-        # Test parsing on real log data. Ensure no exceptions are thrown
-        config = test_data.create_splunk_config()
-        splunk = Splunk(config)
-
-        for log_line in SplunkTest.read_log_lines():
-            splunk._parse_timestamp(log_line)
 
     def test_publish_logs(self):
         config = test_data.create_splunk_config()
@@ -72,18 +40,16 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock()
 
-        timestamp, log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0]
-
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertTrue(splunk.publish_log_lines())
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = json.dumps({
-            'time': timestamp,
+            'time': test_data.DNS_LOG_TIMESTAMPS[0],
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': log_line,
+            'event': test_data.DNS_LOG_LINES[0],
             'sourcetype': config.splunk.lds_hec.source_type,
             'index': config.splunk.lds_hec.index
         })
@@ -128,18 +94,16 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock()
 
-        timestamp, log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0]
-
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertTrue(splunk.publish_log_lines())
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = json.dumps({
-            'time': timestamp,
+            'time': test_data.DNS_LOG_TIMESTAMPS[0],
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': log_line,
+            'event': test_data.DNS_LOG_LINES[0],
         })
         splunk._post.assert_called_once_with(
             url=expected_url,
@@ -207,12 +171,10 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock()
 
-        log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0][1]
-
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertFalse(splunk.publish_log_lines())
 
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[1])
         self.assertFalse(splunk.publish_log_lines())
 
         splunk._post.assert_not_called()
@@ -244,24 +206,22 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock()
 
-        timestamp, log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0]
-
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertFalse(splunk.publish_log_lines())
 
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertFalse(splunk.publish_log_lines())
 
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertTrue(splunk.publish_log_lines())
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = {
-            'time': timestamp,
+            'time': test_data.DNS_LOG_TIMESTAMPS[0],
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': log_line,
+            'event': test_data.DNS_LOG_LINES[0],
             'sourcetype': config.splunk.lds_hec.source_type,
             'index': config.splunk.lds_hec.index
         }
@@ -317,21 +277,19 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock()
 
-        timestamp, log_line = SplunkTest._TIMESTAMP_TO_LOG_LINE[0]
-
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertFalse(splunk.publish_log_lines())
 
-        splunk.add_log_line(log_line)
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertTrue(splunk.publish_log_lines(force=True))
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = {
-            'time': timestamp,
+            'time': test_data.DNS_LOG_TIMESTAMPS[0],
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': log_line,
+            'event': test_data.DNS_LOG_LINES[0],
             'sourcetype': config.splunk.lds_hec.source_type,
             'index': config.splunk.lds_hec.index
         }
@@ -373,11 +331,6 @@ class SplunkTest(unittest.TestCase):
             headers=expected_headers,
             events_json=expected_events
         )
-
-    @staticmethod
-    def read_log_lines() -> list[str]:
-        with open(SplunkTest._TEST_LOG_FILENAME, 'r', encoding='utf-8') as file:
-            return file.readlines()
 
     @staticmethod
     def create_expected_record_event(config: Config, event, optionals=True) -> dict[str, Any]:

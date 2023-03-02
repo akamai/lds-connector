@@ -24,6 +24,7 @@ from .config import Config
 from .dns_record import DnsRecord
 from .handler import Handler
 from .json import CustomJsonEncoder
+from .log_file import LogEvent
 
 
 class SysLog(Handler):
@@ -51,7 +52,7 @@ class SysLog(Handler):
         ))
         self.syslogger.addHandler(handler)
 
-    def add_log_line(self, log_line: str) -> None:
+    def add_log_line(self, log_event: LogEvent) -> None:
         """
         Add log line to SysLog queue
 
@@ -60,7 +61,7 @@ class SysLog(Handler):
 
         Returns: None
         """
-        self.log_queue.append(log_line)
+        self.log_queue.append(log_event.log_line)
 
     def add_dns_record(self, dns_record: DnsRecord) -> None:
         """

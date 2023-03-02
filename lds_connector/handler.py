@@ -1,11 +1,12 @@
 from abc import ABCMeta, abstractmethod
 
 from .dns_record import DnsRecord
+from .log_file import LogEvent
 
 class Handler(metaclass = ABCMeta):
 
     @abstractmethod
-    def add_log_line(self, log_line: str) -> None:
+    def add_log_line(self, log_event: LogEvent) -> None:
         pass
 
     @abstractmethod

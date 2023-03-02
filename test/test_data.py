@@ -19,10 +19,12 @@ import os
 from os import path
 import shutil
 import json
+from datetime import datetime
 
 from lds_connector.config import *
 from lds_connector.log_manager import LogFile, LogNameProps, LogManager
 from lds_connector.edgedns_manager import DnsRecord
+from lds_connector.log_file import LogEvent
 
 
 DATA_DIR = path.join(path.dirname(__file__), 'data')
@@ -41,6 +43,15 @@ DNS_LOG_LINES = [
     '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,64062,2ww-nigiro.edgedns.zone,IN,A,E,4096,D,,3:NXDOMAIN \n',
     '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,43215,edgedns.zone,IN,NS,E,4096,D,,86400:a13-67.akam.net 86400:a11-66.akam.net 86400:a22-64.akam.net 86400:a24-65.akam.net 86400:a28-66.akam.net 86400:a1-247.akam.net SIGNx1 \n',
     '416458 - 1672713883 03/01/2023 02:44:43,2600:1406:1a00:2::687d:da8c,44473,edgedns.zone,IN,SOA,,,,,86400:a1-247.akam.net hostmaster.edgedns.zone 2019102599 3600 600 604800 300 \n'
+]
+
+DNS_LOG_TIMESTAMPS = [1672715199.0, 1672715199.0, 1672715199.0, 1672713883.0]
+
+DNS_LOG_EVENTS = [
+    LogEvent(DNS_LOG_LINES[0], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[0])),
+    LogEvent(DNS_LOG_LINES[1], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[1])),
+    LogEvent(DNS_LOG_LINES[2], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[2])),
+    LogEvent(DNS_LOG_LINES[3], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[3]))
 ]
 
 
