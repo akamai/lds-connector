@@ -19,8 +19,8 @@ syslog : # SysLog configuration
   host : '127.0.0.1'                    # SysLog server host name / IP
   port: 513                             # SysLog server port
   use_tcp : true                        # Whether to use TCP or UDP. 
-  lds_app_name : 'lds_dns_log'          # Program name for LDS log messages
-  edgedns_app_name : 'lds_dns_record'   # Program name for Edge DNS records
+  lds_app_name : 'lds_dns_log'          # Program name for LDS log messages. Wazuh uses this to determine decoder
+  edgedns_app_name : 'lds_dns_record'   # Program name for Edge DNS records. Wazuh uses this to determine decoder
 
 edgedns : # Optional. EdgeDNS configuration
   send_records : true       # Fetch + send zone_name's resource records. Open must be configured
