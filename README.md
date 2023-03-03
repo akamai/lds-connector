@@ -46,18 +46,22 @@ See the [LDS Connector documentation](docs/lds_connector/README.md).
 Installation
 ------------
 
-This package will eventually be ported to PyPI and installable via pip. Note that I've only tested this script on macOS 
-so far.
+This package will eventually be ported to PyPI and installable via pip. I've tested this script on macOS and 
+Ubuntu.
+
+You'll need to have Python >= 3.9, PIP, and virtualenv installed. On Ubuntu, install the packages `python3.9` 
+and `python3.9-venv`. 
 
 First, create a virtual environment and activate it. 
 ```sh
-splunk-lds-connector % python3 -m venv env
-splunk-lds-connector % source env/bin/activate
+lds-connector % python3.9 -m venv env
+lds-connector % source env/bin/activate
 ```
 
-Next, install the required packages. 
+Next, ensure PIP is up-to-date and install the required packages. 
 ```sh
-splunk-lds-connector % python3 -m pip install -r requirements.txt
+lds-connecotr % python3.9 -m pip install --upgrade pip
+lds-connector % python3.9 -m pip install -r requirements.txt
 ```
 
 Great job! The script is ready.
@@ -69,7 +73,7 @@ Running
 Run the script with the following command. Use the `-h` flag for the help message. 
 
 ``` sh
-$ python3 lds_connector.py --config config.yaml
+$ python3.9 lds_connector.py --config config.yaml
 ```
 
 
@@ -130,12 +134,18 @@ Developer Notes
 
 You can run the unit tests using the following command
 ```sh
-splunk-lds-connector % python3 -m unittest discover -vb
+lds-connector % python3.9 -m unittest discover -vb
 ... Test output
 ----------------------------------------------------------------------
 Ran 21 tests in 0.018s
 
 OK
+```
+
+
+You can run the coverage analysis using the following commands
+```sh
+lds-connector % coverage run -m unittest discover
 ```
 
 Authors
