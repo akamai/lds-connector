@@ -106,19 +106,23 @@ Example Use Case
 
 An example use case of this script is to improve visibility into NXDOMAIN spikes. 
 
-The script periodically delivers Edge DNS log events into Splunk. 
+The script periodically delivers Edge DNS log events into Splunk or Wazuh
 
 The following Splunk dashboard shows some simple DNS traffic visualizations
 - A chart of NXDOMAIN count over time
 - A geo map showing where DNS queries originated from and what proportion were NXDOMAINs. Splunk converts the source IP 
   in the Edge DNS log lines into geographic data.
 
-![](img/splunk_nxdomain_dashboard.jpg)
+![](EXAMPLES/splunk_example1.jpg)
 
 Notice the NXDOMAIN spike. We use Splunk Search to narrow in on the spike and investigate. The traffic mostly came from 
 Portland and Yekaterinburg. Most from Portland were not NXDOMAINs. Most from Yekaterinburg were NXDOMAINs.
 
-![](img/splunk_nxdomain_invest.jpg)
+![](EXAMPLES/splunk_example2.jpg)
+
+We can produce similar visualizations in Wazuh as well.
+
+![](EXAMPLES/wazuh_example1.jpg)
 
 
 Developer Notes
