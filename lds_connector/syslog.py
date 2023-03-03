@@ -19,6 +19,8 @@ import json
 import logging
 import socket
 from logging.handlers import SysLogHandler
+from typing import Dict
+from datetime import datetime, timezone
 
 from .config import Config
 from .dns_record import DnsRecord
@@ -28,13 +30,15 @@ from .log_file import LogEvent
 
 
 class SysLog(Handler):
-    _APP_NAME_ARG = 'app_name'
+    _ARG_APP_NAME = 'app_name'
+    _ARG_LOG_TIME = 'log_time'
+    _TIME_FORMAT = '%b %d %H:%M:%S'
 
     def __init__(self, config: Config):
         assert config.syslog is not None
 
         self.config = config
-        self.log_queue: list[str] = []
+        self.log_queue: list[LogEvent] = []
         self.dns_queue: list[str] = []
 
         self.syslogger = logging.getLogger('SysLogger')
@@ -47,8 +51,7 @@ class SysLog(Handler):
         )
         handler.append_nul = False
         handler.setFormatter(logging.Formatter(
-            f'%(asctime)s {socket.gethostname()} %({SysLog._APP_NAME_ARG})s: %(message)s',
-            datefmt='%b %d %H:%M:%S'
+            f'%({SysLog._ARG_LOG_TIME})s {socket.gethostname()} %({SysLog._ARG_APP_NAME})s: %(message)s'
         ))
         self.syslogger.addHandler(handler)
 
@@ -61,7 +64,7 @@ class SysLog(Handler):
 
         Returns: None
         """
-        self.log_queue.append(log_event.log_line)
+        self.log_queue.append(log_event)
 
     def add_dns_record(self, dns_record: DnsRecord) -> None:
         """
@@ -91,9 +94,12 @@ class SysLog(Handler):
 
         logging.debug('Publishing log lines to SysLog server')
         assert self.config.syslog is not None
-        extra_args = {SysLog._APP_NAME_ARG: self.config.syslog.lds_app_name}
-        for log_line in self.log_queue:
-            self.syslogger.info(log_line, extra=extra_args)
+        for log_event in self.log_queue:
+            extra_args = {
+                SysLog._ARG_APP_NAME: self.config.syslog.lds_app_name,
+                SysLog._ARG_LOG_TIME: log_event.timestamp.strftime(SysLog._TIME_FORMAT)
+            }
+            self.syslogger.info(log_event.log_line, extra=extra_args)
 
         self.log_queue.clear()
         logging.debug('Published log lines to SysLog server')
@@ -114,7 +120,10 @@ class SysLog(Handler):
 
         logging.debug('Publishing DNS records to SysLog server')
         assert self.config.syslog is not None
-        extra_args = {SysLog._APP_NAME_ARG: self.config.syslog.edgedns_app_name}
+        extra_args = {
+            SysLog._ARG_APP_NAME: self.config.syslog.edgedns_app_name,
+            SysLog._ARG_LOG_TIME: datetime.now(timezone.utc).strftime(SysLog._TIME_FORMAT)
+        }
         for dns_record in self.dns_queue:
             self.syslogger.info(dns_record, extra=extra_args)
 

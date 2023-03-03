@@ -15,21 +15,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import socket
 import unittest
-import json
-from unittest.mock import patch, MagicMock, call
-
+from datetime import datetime
 from test import test_data
-from lds_connector.syslog import SysLog
-from lds_connector.json import CustomJsonEncoder
+from unittest.mock import MagicMock, call, patch
+
+from freezegun import freeze_time
+
 from lds_connector.config import Config
+from lds_connector.json import CustomJsonEncoder
+from lds_connector.log_file import LogEvent
+from lds_connector.syslog import SysLog
+
 
 class SysLogTest(unittest.TestCase):
     LOG_EMIT_TIME = 1647651600.0
 
+    EXPECTED_TIMES = [
+        'Jan 03 03:06:39',
+        'Jan 03 03:06:39',
+        'Jan 03 03:06:39',
+        'Jan 03 02:44:43'
+    ]
+
     @patch('lds_connector.syslog.logging.handlers.socket.socket')
-    @patch('time.time', MagicMock(return_value=LOG_EMIT_TIME))
     def test_publish_udp_log(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         mock_socket_inst = MagicMock()
@@ -39,12 +50,12 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_LINES[0])
+        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
         assert config.syslog is not None
         mock_socket_inst.sendto.assert_called_once_with(expected_message, (config.syslog.host, config.syslog.port))
 
     @patch('lds_connector.syslog.logging.handlers.socket.socket')
-    @patch('time.time', MagicMock(return_value=LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
     def test_publish_udp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         mock_socket_inst = MagicMock()
@@ -60,7 +71,7 @@ class SysLogTest(unittest.TestCase):
         mock_socket_inst.sendto.assert_called_once_with(expected_message, (config.syslog.host, config.syslog.port))
 
     @patch('lds_connector.syslog.logging.handlers.socket.socket')
-    @patch('time.time', MagicMock(return_value=LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
     def test_publish_tcp_log(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
@@ -72,12 +83,12 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_LINES[0])
+        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
 
     @patch('lds_connector.syslog.logging.handlers.socket.socket')
-    @patch('time.time', MagicMock(return_value=LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
     def test_publish_tcp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
@@ -127,9 +138,9 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.publish_log_lines()
 
         assert config.syslog is not None
-        expected_message1 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_LINES[0])
-        expected_message2 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_LINES[1])
-        expected_message3 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_LINES[2])
+        expected_message1 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
+        expected_message2 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[1], SysLogTest.EXPECTED_TIMES[1])
+        expected_message3 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[2], SysLogTest.EXPECTED_TIMES[2])
         self.assertEqual(mock_socket_inst.sendto.call_count, 3)
         mock_socket_inst.sendto.assert_has_calls([
             call(expected_message1, (config.syslog.host, config.syslog.port)),
@@ -138,7 +149,7 @@ class SysLogTest(unittest.TestCase):
         ])
 
     @patch('lds_connector.syslog.logging.handlers.socket.socket')
-    @patch('time.time', MagicMock(return_value=LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
     def test_publish_multiple_dns_records(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
 
@@ -181,9 +192,9 @@ class SysLogTest(unittest.TestCase):
         return f'<14>Mar 18 18:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}'.encode('utf-8')
 
     @staticmethod
-    def create_syslog_message_log(config: Config, message: str):
+    def create_syslog_message_log(config: Config, log_event: LogEvent, timestamp: str):
         assert config.syslog is not None
-        return f'<14>Mar 18 18:00:00 {socket.gethostname()} {config.syslog.lds_app_name}: {message}'.encode('utf-8')
+        return f'<14>{timestamp} {socket.gethostname()} {config.syslog.lds_app_name}: {log_event.log_line}'.encode('utf-8')
 
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@ import os
 from os import path
 import shutil
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from lds_connector.config import *
 from lds_connector.log_manager import LogFile, LogNameProps, LogManager
@@ -48,10 +48,10 @@ DNS_LOG_LINES = [
 DNS_LOG_TIMESTAMPS = [1672715199.0, 1672715199.0, 1672715199.0, 1672713883.0]
 
 DNS_LOG_EVENTS = [
-    LogEvent(DNS_LOG_LINES[0], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[0])),
-    LogEvent(DNS_LOG_LINES[1], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[1])),
-    LogEvent(DNS_LOG_LINES[2], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[2])),
-    LogEvent(DNS_LOG_LINES[3], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[3]))
+    LogEvent(DNS_LOG_LINES[0], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[0]).astimezone(timezone.utc)),
+    LogEvent(DNS_LOG_LINES[1], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[1]).astimezone(timezone.utc)),
+    LogEvent(DNS_LOG_LINES[2], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[2]).astimezone(timezone.utc)),
+    LogEvent(DNS_LOG_LINES[3], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[3]).astimezone(timezone.utc))
 ]
 
 

@@ -166,7 +166,7 @@ class Connector:
         timestamp_substr = parse_result['timestamp']
 
         if self.config.lds.timestamp_strptime == '%s':
-            return datetime.fromtimestamp(float(timestamp_substr))
+            return datetime.fromtimestamp(float(timestamp_substr)).astimezone(timezone.utc)
 
         timestamp_datetime = datetime.strptime(timestamp_substr, self.config.lds.timestamp_strptime)
         timestamp_datetime = timestamp_datetime.replace(tzinfo=timezone.utc)
