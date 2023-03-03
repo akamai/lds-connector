@@ -179,7 +179,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
     yaml_config = yaml.safe_load(yaml_stream)
 
     try:
-        # Akamai EdgeDNS Config
+        # Akamai Edge DNS Config
         edgedns_yaml = yaml_config.get(_KEY_EDGEDNS, None)
         edgedns_config = None
         if edgedns_yaml is not None:
@@ -219,7 +219,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
                 edgedns_hec=None
             )
 
-            # Splunk EdgeDNS HEC Config 
+            # Splunk Edge DNS HEC Config 
             splunk_edgedns_yaml = splunk_yaml.get(_KEY_SPLUNK_HEC_EDGEDNS)
             if splunk_edgedns_yaml is not None:
                 splunk_config.edgedns_hec = HecConfig(

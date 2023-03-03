@@ -91,10 +91,10 @@ Enter your contact details and hit create!
 Great job! LDS is configured. It can take a few hours for log delivery to start
 
 
-EdgeDNS Record Configuration
+Edge DNS Record Configuration
 ============================
 
-The script has an optional feature to send a given zone's EdgeDNS record set.
+The script has an optional feature to send a given zone's Edge DNS record set.
 
 This requires configuring Akamai API credentials, such that the script is able to fetch these records. These are 
 different than the NetStorage API credentials, and easier to configure. See the following instructions

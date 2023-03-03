@@ -56,13 +56,13 @@ class EdgeDnsManager():
         # Fetch first page of DNS records
         response = self.open_session.get(url=self.records_url, params=query_params)
         if response.status_code != 200:
-            logging.error('Failed fetching EdgeDNS records')
+            logging.error('Failed fetching Edge DNS records')
             return []
         try:
             last_page = response.json()['metadata']['lastPage']
             next_page = response.json()['metadata']['page'] + 1
         except (KeyError, TypeError) as key_error:
-            logging.error('EdgeDNS API returned unexpected response [%s]: [%s]', key_error, response.json)
+            logging.error('Edge DNS API returned unexpected response [%s]: [%s]', key_error, response.json)
             return []
         record_set.extend(self._parse_records(response.json()))
 
@@ -71,7 +71,7 @@ class EdgeDnsManager():
             query_params['page'] = next_page
             response = self.open_session.get(url=self.records_url, params=query_params)
             if response.status_code != 200:
-                logging.error('Failed fetching EdgeDNS records')
+                logging.error('Failed fetching Edge DNS records')
                 break
             record_set.extend(self._parse_records(response.json()))
             next_page += 1
@@ -95,7 +95,7 @@ class EdgeDnsManager():
                     rdata=json_record['rdata']
                 ))
             except (KeyError, TypeError) as key_error:
-                logging.warning('EdgeDNS API returned record missing key [%s]: [%s]', key_error, json_record)
+                logging.warning('Edge DNS API returned record missing key [%s]: [%s]', key_error, json_record)
 
         return records
 
