@@ -186,6 +186,19 @@ class ConnectorTest(unittest.TestCase):
 
     # Generic tests
 
+    def test_dns_records_disabled(self):
+        config = test_data.create_splunk_config()
+        config.edgedns = None
+        connector = Connector(config)
+
+        connector.log_manager.get_next_log = MagicMock(return_value=None)
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
+
+        connector.process_dns_records()
+
+        self.assertIsNone(connector.edgedns)
+
     def test_logs_none_available(self):
         config = test_data.create_splunk_config()
         assert config.edgedns is not None
@@ -202,7 +215,7 @@ class ConnectorTest(unittest.TestCase):
         connector.log_manager.save_resume_data.assert_not_called()
         connector.event_handler._post.assert_not_called()
 
-    def test_logs_unexpected_error(self):
+    def test_logs_server_error(self):
         config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
@@ -235,6 +248,29 @@ class ConnectorTest(unittest.TestCase):
 
         connector.event_handler._post.assert_called()
         self.assertEqual(connector.event_handler._post.call_count, 4)
+
+    def test_logs_line_error(self):
+        config = test_data.create_splunk_config()
+        assert config.edgedns is not None
+        config.edgedns.send_records = False
+        connector = Connector(config)
+
+        log_file = test_data.get_ns_file4()
+        test_data.download_uncompress_file(log_file)
+
+        connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
+        connector.log_manager.save_resume_data = MagicMock()
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
+
+        connector.process_log_files()
+
+        self.assertTrue(log_file.processed)
+        self.assertEqual(log_file.last_processed_line, 16)
+        self.assertFalse(os.path.isfile(log_file.local_path_txt))
+
+        connector.log_manager.save_resume_data.assert_called_once()
+        connector.event_handler._post.assert_called()
 
     def test_logs_resume_from_line_number(self):
         lines_already_processed = 7

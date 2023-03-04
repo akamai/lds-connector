@@ -185,6 +185,28 @@ def get_ns_file3():
     )
 
 
+def get_ns_file4():
+    return LogFile(
+        ns_path_gz='/123456/cam/logs/cam_123456.edns_U.202301030500-0600-0.gz',
+        filename_gz='cam_123456.edns_U.202301030500-0600-0.gz',
+        size=3456,
+        md5='d850f04cdb48312a9be171e214c0b4ee',
+        name_props= LogNameProps(
+            customer_id='cam',
+            cp_code=123456,
+            format='edns',
+            sorted=False,
+            start_time=1672718400.0,
+            part=0,
+            encoding='gz'
+        ),
+        local_path_gz='',
+        local_path_txt='',
+        processed=False,
+        last_processed_line=-1
+    )
+
+
 DNS_RECORD1_JSON = '{"time_fetched_sec": 0, "zone": "edgedns.zone", "name": "edgedns.zone", "type": "CAA", ' \
     + '"ttl_sec": 300, "rdata": ["0 issue \\"ca.sectigo.com\\"", "0 issue \\"ca.digicert.com\\""]}'
 def create_dns_record1():

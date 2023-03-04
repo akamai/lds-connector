@@ -42,6 +42,10 @@ class LogManagerTest(unittest.TestCase):
             shutil.rmtree(test_data.TEMP_DIR)
 
     def test_parse_log_name(self):
+        """
+        If the log file name is valid
+        Then the log manager parses out the metadata
+        """
         file_name = "cam_123456.edns_U.202301030300-0400-3.gz"
 
         expected_name_props = LogNameProps(
@@ -59,11 +63,19 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(expected_name_props, name_props)
 
     def test_parse_list_response(self):
+        """
+        If the NetStorage list API XML response is valid
+        Then the log manager parses out the log file metadata for each
+        """
         log_files = LogManager._parse_list_response(test_data.NS_LIST_RESPONSE)
 
         self.assertEqual(log_files, [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
     def test_parse_list_response_error(self):
+        """
+        If the NetStorage list API XML response contains files missing some metadata (md5 hash)
+        Then the log manager skips these files
+        """
         list_response_xml = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <list>
     <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030300-0400-0.gz" size="1234"/>
@@ -95,15 +107,23 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(log_files, [file2])
 
     def test_determine_next_log_fresh(self):
+        """
+        If the log manager hasn't processed any log files
+        Then the log manager selects the first log file chronologically
+        """
         log_manager = LogManager(test_data.create_splunk_config())
 
-        log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
+        log_manager._list = MagicMock(return_value = [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
 
         next_log = log_manager._determine_next_log()
 
         self.assertEqual(next_log, test_data.get_ns_file1())
 
     def test_determine_next_log_skip_older_time(self):
+        """
+        If the log manager has processed the first log file
+        Then the log manager selects the second log file chronologically
+        """
         log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file1()
 
@@ -114,6 +134,11 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(next_log, test_data.get_ns_file2())
 
     def test_determine_next_log_skip_older_part(self):
+        """
+        Considering that the second and third log file have the same time, but different parts
+        If the log manager has processed the second log file
+        Then the log manager selects the third log file
+        """
         log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file2()
 
@@ -124,6 +149,10 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(next_log, test_data.get_ns_file3())
 
     def test_determine_next_log_all_done(self):
+        """
+        If the log manager has processed all log files returned from NetStorage 
+        Then the log manager doesn't select any log file
+        """
         log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file3()
 
@@ -135,6 +164,10 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNone(next_log)
 
     def test_determine_next_log_none(self):
+        """
+        If NetStorage returns no log files
+        Then the log manager doesn't select any log file
+        """
         log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file3()
 
@@ -145,6 +178,12 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNone(next_log)
 
     def test_determine_next_log_choose_first_part(self):
+        """
+        Considering that the second and third log file have the same time, but parts 0 and 1 respectively
+        If the log manager has processed the first log file
+        Then the log manager will select the second log file
+        Event if NetStorage returns the parts out-of-order
+        """
         log_manager = LogManager(test_data.create_splunk_config())
         log_manager.last_log_file = test_data.get_ns_file1()
 
@@ -156,6 +195,10 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(next_log, test_data.get_ns_file2())
 
     def test_get_next_log(self):
+        """
+        If the log manager hasn't processed any log files
+        Then the log manager fetches/unzips the first log file chronologically
+        """
         config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
@@ -176,7 +219,62 @@ class LogManagerTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(expected_log_file.local_path_txt))
         self.assertFalse(os.path.isfile(expected_log_file.local_path_gz))
 
+    def test_get_next_log_none(self):
+        config = test_data.create_splunk_config()
+        config.lds.log_download_dir = test_data.TEMP_DIR
+        log_manager = LogManager(config)
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
+        log_manager._download = MagicMock(wraps=test_data.download_file)
+
+        self.assertIsNotNone(log_manager.get_next_log())
+        self.assertIsNotNone(log_manager.get_next_log())
+        self.assertIsNotNone(log_manager.get_next_log())
+        self.assertIsNone(log_manager.get_next_log())
+
+    def test_get_next_log_sequence(self):
+        """
+        If the log manager processes the first two log files 
+        And the second log file is marked processed and saved
+        Then the resume file will be updated
+
+        If the log manager is reinitialized
+        Then the log manager will read the resume file
+        And the log manager will select the third log file
+        """
+        config = test_data.create_splunk_config()
+        config.lds.log_download_dir = test_data.TEMP_DIR
+        log_manager = LogManager(config)
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
+        log_manager._download = MagicMock(wraps=test_data.download_file)
+
+        log_file1 = log_manager.get_next_log()
+        log_file2 = log_manager.get_next_log()
+
+        assert log_file1 is not None
+        self.assertEqual(log_file1.filename_gz, test_data.get_ns_file1().filename_gz)
+        assert log_file2 is not None
+        self.assertEqual(log_file2.filename_gz, test_data.get_ns_file2().filename_gz)
+
+        log_file2.processed = True
+        log_manager.save_resume_data()
+
+        # Reinitialize log manager to simulate script restart
+        log_manager = LogManager(config)
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
+        log_manager._download = MagicMock(wraps=test_data.download_file)
+
+        log_file3 = log_manager.get_next_log()
+        assert log_file3 is not None
+        self.assertEqual(log_file3.filename_gz, test_data.get_ns_file3().filename_gz)
+
     def test_read_resume_data(self):
+        """
+        If there is a resume pickle file
+        Then the log manager reads it on init
+        """
         resume_data = test_data.get_ns_file1()
         resume_data.processed = True
         resume_data.last_processed_line = 4
@@ -192,6 +290,10 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(log_manager.resume_log_file, resume_data)
 
     def test_resume_unfinished_log(self):
+        """
+        If the log manager has resume data indicating the first log file was partially processed
+        Then the log manager continues processing it at the next line
+        """
         resume_data = test_data.get_ns_file1()
         resume_data.processed = False
         resume_data.last_processed_line = 2
@@ -212,6 +314,10 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNone(log_manager.last_log_file)
 
     def test_resume_finished_log(self):
+        """
+        If the log manager has resume data indicating the first log file was fully processed
+        Then the log manager fetches/unzips the next log file chronologically
+        """
         resume_data = test_data.get_ns_file1()
         resume_data.processed = True
         resume_data.last_processed_line = 4
@@ -239,6 +345,12 @@ class LogManagerTest(unittest.TestCase):
         self.assertFalse(os.path.isfile(log_file.local_path_gz))
 
     def test_resume_unfinished_log_missing(self):
+        """
+        If the log manager has resume data indicating the first log file was partially processed
+        And the log file is missing
+        Then the log manager ignores it and fetches/unzips the next log file chronologically
+        """
+
         resume_data = test_data.get_ns_file2()
         resume_data.processed = False
         resume_data.last_processed_line = 2

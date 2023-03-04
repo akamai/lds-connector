@@ -126,11 +126,13 @@ class Connector:
             try:
                 log_event = self._create_log_event(log_line)
                 self.event_handler.add_log_line(log_event)
-                if self.event_handler.publish_log_lines():
-                    log_file.last_processed_line = line_number
             except Exception as exception:
                 logging.error('Failed processing log line. Ignoring and moving on. [%s]', exception)
+                log_line = file.readline()
                 continue
+
+            if self.event_handler.publish_log_lines():
+                log_file.last_processed_line = line_number
 
             log_line = file.readline()
 

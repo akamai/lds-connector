@@ -146,6 +146,8 @@ OK
 You can run the coverage analysis using the following commands
 ```sh
 lds-connector % coverage run -m unittest discover
+lds-connector % coverage report
+lds-connector % coverage html
 ```
 
 Authors
