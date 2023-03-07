@@ -1,3 +1,15 @@
+Introduction
+============
+
+This document details how to configure log delivery to Wazuh.
+
+This document covers the following
+- Wazuh basics / key terminology
+- How to configure Wazuh to receive log events
+- How to add a Wazuh decoder and alert rule for our log events
+- How to configure the LDS Connector to deliver to Wazuh
+- Wazuh troubleshooting
+
 Background
 ===========
 
@@ -26,6 +38,7 @@ them in an index. An index is created for each day.
 
 The Wazuh Dashboard is a web interface into Wazuh. It allows users to search for alerts, create dashboards, and manage
 some configuration.
+
 
 Wazuh Configuration
 ===================

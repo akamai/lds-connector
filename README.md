@@ -1,21 +1,27 @@
 Akamai Log Delivery Service Connector 
 =====================================
 
-This script moves log data from Akamai's Log Delivery Service (LDS) into a destination service. We currently 
-support Splunk and Wazuh/SysLog
-
-This project is in early development. 
-
-
-Architecture
+Introduction
 ------------
 
-This solution continuosuly delivers Akamai log data into a destination service. So how does this work?
+The LDS Connector is a solution to periodically deliver Akamai log events into third-party data platforms. 
+We currently support delivering logs to Splunk, Wazuh, and anything other platform accepting SysLog messages.
 
-1. The Log Delivery Service periodically delivers compressed log files to NetStorage.
-2. NetStorage stores and automatically purges the log files. It provides an API for downloading log files
-3. The LDS Connector script monitors for new log files NetStorage. It downloads them, parses out events, 
-   and sends them to a destination service
+The Log Delivery Service (LDS) is an Akamai service that periodically delivers Akamai log files via email, FTP storage, 
+or Akamai NetStorage. 
+
+The LDS Connector is a script that monitors a NetStorage location for LDS logs, parses them into log events, and sends
+them to your data platform.
+
+This document will show you
+1. How to configure Log Delivery Service to send your Akamai logs to NetStorage
+2. How to configure your third-party data platform to receive Akamai logs
+  - For Splunk users: How to enable event receiving, add a source type, and add field extraction
+  - For Wazuh users: How to enable SysLog receiving, add a custom decoder, add a custom rule
+3. How to install, configure, and run the LDS Connector script
+
+The LDS Connector works with any Log Delivery Service log format. However, we'll provide specific examples for DNS 
+logs.
 
 
 Getting Started
@@ -24,12 +30,13 @@ Getting Started
 Prerequisites
 -------------
 
-See the [Akamai documentation](docs/akamai/README.md) to configure NetStorage and the Log Delivery Service.
+See the [Akamai documentation](docs/akamai/README.md) to configure NetStorage and the Log Delivery Service. 
 
-See the [Splunk documentation](docs/splunk/README.md) to configure delivery to Splunk.
+If you want to deliver logs to Splunk, then see the [Splunk documentation](docs/splunk/README.md).
 
-See the [Wazuh documentation](docs/wazuh/README.md) to configure delivery to Wazuh. This should also work with other
-services accepting SysLog messages.
+If you want to deliver logs to Wazuh, then see the [Wazuh documentation](docs/wazuh/README.md).
+
+If you want to deliver logs via SysLog, then see the [SysLog documentation](docs/syslog/README.md).
 
 
 Configuration
@@ -39,7 +46,7 @@ The script is configured using a YAML file passed as a command line argument.
 
 Use `config_template.yaml` as a template. It includes a comment describing each field.
 
-The README files in the docs/ directory contain more information.
+The README files linked above contain more information on how these are set.
 See the [LDS Connector documentation](docs/lds_connector/README.md).
 
 
@@ -60,7 +67,7 @@ lds-connector % source env/bin/activate
 
 Next, ensure PIP is up-to-date and install the required packages. 
 ```sh
-lds-connecotr % python3.9 -m pip install --upgrade pip
+lds-connector % python3.9 -m pip install --upgrade pip
 lds-connector % python3.9 -m pip install -r requirements.txt
 ```
 
@@ -126,7 +133,9 @@ Portland and Yekaterinburg. Most from Portland were not NXDOMAINs. Most from Yek
 
 We can produce similar visualizations in Wazuh as well.
 
-![](EXAMPLES/wazuh_example1.jpg)
+![](EXAMPLES/wazuh_example.jpg)
+
+A more detailed example is included at [EXAMPLES/](./EXAMPLES/dns_logs/README.md)
 
 
 Developer Notes

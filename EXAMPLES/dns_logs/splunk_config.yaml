@@ -1,0 +1,21 @@
+---
+# All credentials in this file have been revoked for security purposes
+
+splunk :
+  host : '127.0.0.1'
+  hec_port : 8088
+  hec_use_ssl : false
+  lds_hec :
+    token : 'ab292c50-b144-4ad4-9af6-59d0d51a7209'
+
+lds :
+  ns : 
+    host : "edge-dns-nsu.akamaihd.net"
+    upload_account : "cmackint1"
+    cp_code : "934217"
+    key : "3tIWaTyYvv22jw0ZadHC8USilhLTDzi5qQQtD0UlcNJNHKQ"
+    use_ssl : true 
+    log_dir : 'logs'
+  log_download_dir : 'tmp/'
+  timestamp_parse : '{} - {} {timestamp},{}'
+  timestamp_strptime : '%d/%m/%Y %H:%M:%S'

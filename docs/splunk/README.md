@@ -1,3 +1,14 @@
+Introduction
+============
+
+This document details how to configure log delivery into Splunk
+
+This document covers the following
+- Splunk basics / key terminology
+- How to configure Splunk to receive log events
+- How to add a Splunk source type and field extraction for our log events
+- How to configure the LDS Connector to deliver to Splunk
+
 
 Background
 ==========
@@ -105,8 +116,8 @@ You'll need the following information
 - The LDS token generated above.
 
 In your LDS connector YAML configuration file
-- Remove the SysLog configuration if present
-- Add the Splunk configuration 
+- Remove the `syslog` configuration if present
+- Add the `splunk` configuration 
 - Use the [config_template.yaml](../../config_template.yaml) file for reference
 
 

@@ -1,3 +1,16 @@
+Introduction
+============
+
+This document details how to configure Akamai services to make logs available to the LDS Connector.
+
+This document covers the following
+- LDS basics / key terminology
+- NetStorage basics / key terminology
+- How to configure NetStorage to store logs
+- How to configure NetStorage API access so the LDS Connector can download logs
+- How to configure Log Delivery Service to deliver logs into NetStorage
+- How to configure Akamai API access so the LDS Connector can fetch Edge DNS records (optional)
+
 
 Background
 ==========

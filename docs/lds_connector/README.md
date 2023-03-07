@@ -1,3 +1,7 @@
+Introduction
+============
+
+This document details some more specifics on the LDS Connector configuration. 
 
 Log Download Directory 
 ======================
