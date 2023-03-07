@@ -9,13 +9,20 @@ splunk : # Splunk configuration
     source_type: 'lds_log_dns'    # Optional. Override HEC token default source type 
     index: 'sandbox'              # Optional. Override HEC token's default index. Must be in HEC token's allow list
     batch_size: 20                # Optional. Default 10. Number of events to send Splunk in single request
-  edgedns_hec :
-    token : ''                    # HEC token for EdgeDNS zone records
+  edgedns_hec : # Optional
+    token : ''                    # HEC token for Edge DNS zone records
     source_type: 'edgedns_log'    # Optional. Override HEC token default source type 
     index: 'sandbox'              # Optional. Override HEC token's default index. Must be in HEC token's allow list
     batch_size: 20                # Optional. Default 10. Number of events to send Splunk in single request
 
-edgedns : # Optional. EdgeDNS configuration
+syslog : # SysLog configuration
+  host : '127.0.0.1'                    # SysLog server host name / IP
+  port: 513                             # SysLog server port
+  use_tcp : true                        # Whether to use TCP or UDP. 
+  lds_app_name : 'lds_dns_log'          # Program name for LDS log messages. Wazuh uses this to determine decoder
+  edgedns_app_name : 'lds_dns_record'   # Program name for Edge DNS records. Wazuh uses this to determine decoder
+
+edgedns : # Optional. Edge DNS configuration
   send_records : true       # Fetch + send zone_name's resource records. Open must be configured
   zone_name : 'example.com' # Zone to send records for
   poll_period_sec : 3600    # Optional. Default 7200. Poll period in seconds

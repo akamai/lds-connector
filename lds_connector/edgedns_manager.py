@@ -17,23 +17,13 @@
 
 import logging
 import time
-from dataclasses import dataclass
 from typing import Optional
 
 import requests
 from akamai.edgegrid import EdgeGridAuth
 
 from .config import Config
-
-
-@dataclass
-class DnsRecord:
-    time_fetched_sec: float
-    zone: str
-    name: str
-    type: str
-    ttl_sec: int
-    rdata: list[str]
+from .dns_record import DnsRecord
 
 
 class EdgeDnsManager():
@@ -66,13 +56,13 @@ class EdgeDnsManager():
         # Fetch first page of DNS records
         response = self.open_session.get(url=self.records_url, params=query_params)
         if response.status_code != 200:
-            logging.error('Failed fetching EdgeDNS records')
+            logging.error('Failed fetching Edge DNS records')
             return []
         try:
             last_page = response.json()['metadata']['lastPage']
             next_page = response.json()['metadata']['page'] + 1
         except (KeyError, TypeError) as key_error:
-            logging.error('EdgeDNS API returned unexpected response [%s]: [%s]', key_error, response.json)
+            logging.error('Edge DNS API returned unexpected response [%s]: [%s]', key_error, response.json)
             return []
         record_set.extend(self._parse_records(response.json()))
 
@@ -81,7 +71,7 @@ class EdgeDnsManager():
             query_params['page'] = next_page
             response = self.open_session.get(url=self.records_url, params=query_params)
             if response.status_code != 200:
-                logging.error('Failed fetching EdgeDNS records')
+                logging.error('Failed fetching Edge DNS records')
                 break
             record_set.extend(self._parse_records(response.json()))
             next_page += 1
@@ -90,21 +80,22 @@ class EdgeDnsManager():
 
     def _parse_records(self, json_response) -> list[DnsRecord]:
         assert self.config.edgedns is not None
+        assert self.config.edgedns.zone_name is not None
 
         records = []
         time_fetched_sec = time.time()
-        for json_record in json_response['recordsets']:
-            try:
-                records.append(DnsRecord(
-                    zone=self.config.edgedns.zone_name,
-                    time_fetched_sec=time_fetched_sec,
-                    name=json_record['name'],
-                    type=json_record['type'],
-                    ttl_sec=json_record['ttl'],
-                    rdata=json_record['rdata']
-                ))
-            except (KeyError, TypeError) as key_error:
-                logging.warning('EdgeDNS API returned record missing key [%s]: [%s]', key_error, json_record)
+        try:
+            for json_record in json_response['recordsets']:
+                    records.append(DnsRecord(
+                        zone=self.config.edgedns.zone_name,
+                        time_fetched_sec=time_fetched_sec,
+                        name=json_record['name'],
+                        type=json_record['type'],
+                        ttl_sec=json_record['ttl'],
+                        rdata=json_record['rdata']
+                    ))
+        except (KeyError, TypeError) as key_error:
+            logging.warning('Edge DNS API returned record missing key [%s]: [%s]', key_error, json_response)
 
         return records
 

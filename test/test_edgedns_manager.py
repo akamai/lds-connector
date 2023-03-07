@@ -37,7 +37,7 @@ class MockResponse(requests.Response):
 class EdgeDnsManagerTest(unittest.TestCase):
 
     def test_get_records_single_page(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         edgedns_manager = EdgeDnsManager(config)
 
         edgedns_manager.open_session.get = MagicMock(
@@ -57,7 +57,7 @@ class EdgeDnsManagerTest(unittest.TestCase):
         self.assertEqual(actual_records, expected_records)
 
     def test_get_records_multiple_pages(self):
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         edgedns_manager = EdgeDnsManager(config)
 
         edgedns_manager.open_session.get = MagicMock(
@@ -78,6 +78,75 @@ class EdgeDnsManagerTest(unittest.TestCase):
             record.time_fetched_sec=0
 
         self.assertEqual(actual_records, expected_records)
+
+    def test_get_records_response_not_200(self):
+        config = test_data.create_splunk_config()
+        edgedns_manager = EdgeDnsManager(config)
+
+        edgedns_manager.open_session.get = MagicMock(
+            return_value = MockResponse(418, None)
+        )
+
+        actual_records = edgedns_manager.get_records()
+
+        self.assertTrue(len(actual_records) == 0)
+
+    def test_get_records_page_not_200(self):
+        config = test_data.create_splunk_config()
+        edgedns_manager = EdgeDnsManager(config)
+
+        edgedns_manager.open_session.get = MagicMock(
+            side_effect = [
+                MockResponse(200, test_data.read_json('test_recordset2_page1.json')),
+                MockResponse(418, None)
+            ]
+        )
+
+        expected_records = [
+            test_data.create_dns_record1(),
+            test_data.create_dns_record2()
+        ]
+
+        actual_records = edgedns_manager.get_records()
+        for record in actual_records:
+            record.time_fetched_sec=0
+
+        self.assertEqual(actual_records, expected_records)
+
+    def test_get_records_response_missing_key(self):
+        config = test_data.create_splunk_config()
+        edgedns_manager = EdgeDnsManager(config)
+
+        edgedns_manager.open_session.get = MagicMock(
+            return_value = MockResponse(200, {'hello': 'there'})
+        )
+
+        actual_records = edgedns_manager.get_records()
+
+        self.assertTrue(len(actual_records) == 0)
+
+    def test_get_records_page_missing_key(self):
+        config = test_data.create_splunk_config()
+        edgedns_manager = EdgeDnsManager(config)
+
+        edgedns_manager.open_session.get = MagicMock(
+            side_effect = [
+                MockResponse(200, test_data.read_json('test_recordset2_page1.json')),
+                MockResponse(200, {'hello': 'there'})
+            ]
+        )
+
+        expected_records = [
+            test_data.create_dns_record1(),
+            test_data.create_dns_record2()
+        ]
+
+        actual_records = edgedns_manager.get_records()
+        for record in actual_records:
+            record.time_fetched_sec=0
+
+        self.assertEqual(actual_records, expected_records)
+
 
     def test_dns_record_json(self):
         dns_record = test_data.create_dns_record1()
