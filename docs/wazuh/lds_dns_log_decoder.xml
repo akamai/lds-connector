@@ -1,0 +1,9 @@
+<decoder name="lds_dns_log_decoder">
+    <program_name>lds_dns_log</program_name>
+</decoder>
+
+<decoder name="lds_dns_log_fields">
+    <parent>lds_dns_log_decoder</parent>
+    <regex type="pcre2" offset="after_parent">^(\d{6})\s-\s(\d{10})\s\d\d\/\d\d\/\d{4}\s\d\d:\d\d:\d\d,([a-zA-Z0-9:.]+),(\d+),([\w\-.]+),(\w*),(\w*),(E?),(\d*),(D?),(T?),(.*)</regex>
+    <order>cp_code,timestamp,src_ip,src_port,domain_name,dns_class,rr_type,edns0_flag,edns0_size,dnssec_flag,tcp_flag,answer</order>
+</decoder>

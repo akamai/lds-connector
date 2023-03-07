@@ -24,9 +24,11 @@ from test import test_data
 from unittest.mock import MagicMock
 
 from lds_connector.connector import Connector
-
+from lds_connector.splunk import Splunk
+from lds_connector.syslog import SysLog
 
 class ConnectorTest(unittest.TestCase):
+    _TEST_LOG_FILENAME = path.abspath(path.join(path.dirname(__file__), 'data/test_logs.txt'))
 
     def setUp(self) -> None:
         super().setUp()
@@ -42,8 +44,38 @@ class ConnectorTest(unittest.TestCase):
         if path.isdir(test_data.TEMP_DIR):
             shutil.rmtree(test_data.TEMP_DIR)
 
-    def test_run_single_log(self):
-        config = test_data.create_config()
+    # Timestamp parsing tests
+
+    def test_parse_timestamp(self):
+        config = test_data.create_splunk_config()
+        connector = Connector(config)
+
+        for i, log_line in enumerate(test_data.DNS_LOG_LINES):
+            actual_timestamp = connector._parse_timestamp(log_line)
+            self.assertEqual(actual_timestamp.timestamp(), test_data.DNS_LOG_TIMESTAMPS[i]) 
+
+    def test_parse_timestamp_epoch(self):
+        config = test_data.create_splunk_config()
+        config.lds.timestamp_parse = '{} - {timestamp} {}'
+        config.lds.timestamp_strptime = '%s'
+        connector = Connector(config)
+
+        for i, log_line in enumerate(test_data.DNS_LOG_LINES):
+            actual_timestamp = connector._parse_timestamp(log_line)
+            self.assertEqual(actual_timestamp.timestamp(), test_data.DNS_LOG_TIMESTAMPS[i])
+
+    def test_parse_all_logs(self):
+        # Test parsing on real log data. Ensure no exceptions are thrown
+        config = test_data.create_splunk_config()
+        connector = Connector(config)
+
+        for log_line in ConnectorTest.read_log_lines():
+            connector._parse_timestamp(log_line)
+
+    # Splunk tests
+
+    def test_splunk_single_log(self):
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -53,7 +85,8 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk._post = MagicMock()
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
@@ -62,11 +95,10 @@ class ConnectorTest(unittest.TestCase):
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
         connector.log_manager.save_resume_data.assert_called_once()
-        connector.splunk._post.assert_called()
-        # TODO: Assert call count
+        connector.event_handler._post.assert_called()
 
-    def test_run_multiple_logs(self):
-        config = test_data.create_config()
+    def test_splunk_multiple_logs(self):
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -79,7 +111,8 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file1, log_file2, None])
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk._post = MagicMock()
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
@@ -93,26 +126,97 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.save_resume_data.assert_called()
         self.assertEqual(connector.log_manager.save_resume_data.call_count, 2)
-        connector.splunk._post.assert_called()
-        self.assertEqual(connector.splunk._post.call_count, 4)
+        connector.event_handler._post.assert_called()
+        self.assertEqual(connector.event_handler._post.call_count, 4)
 
-    def test_run_no_logs(self):
-        config = test_data.create_config()
+    def test_splunk_records(self):
+        config = test_data.create_splunk_config()
+        connector = Connector(config)
+
+        connector.log_manager.get_next_log = MagicMock(return_value=None)
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
+        assert connector.edgedns is not None
+        connector.edgedns.get_records = MagicMock(return_value=[test_data.create_dns_record1(), test_data.create_dns_record2()])
+
+        connector.process_dns_records()
+
+        self.assertTrue(connector.edgedns.get_records.assert_called_once)
+        self.assertEqual(connector.event_handler._post.call_count, 1)
+
+    # SysLog tests
+
+    def test_syslog_single_log(self):
+        config = test_data.create_syslog_config()
+        assert config.edgedns is not None
+        config.edgedns.send_records = False
+        connector = Connector(config)
+
+        log_file = test_data.get_ns_file1()
+        test_data.download_uncompress_file(log_file)
+
+        connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
+        connector.log_manager.save_resume_data = MagicMock()
+        assert isinstance(connector.event_handler, SysLog)
+        connector.event_handler.syslogger = MagicMock()
+
+        connector.process_log_files()
+
+        self.assertTrue(log_file.processed)
+        self.assertEqual(log_file.last_processed_line, 15)
+        self.assertFalse(os.path.isfile(log_file.local_path_txt))
+
+        connector.log_manager.save_resume_data.assert_called_once()
+        connector.event_handler.syslogger.info.assert_called()
+
+    def test_syslog_records(self):
+        config = test_data.create_syslog_config()
+        connector = Connector(config)
+
+        connector.log_manager.get_next_log = MagicMock(return_value=None)
+        assert isinstance(connector.event_handler, SysLog)
+        connector.event_handler.syslogger = MagicMock()
+        assert connector.edgedns is not None
+        connector.edgedns.get_records = MagicMock(return_value=[test_data.create_dns_record1(), test_data.create_dns_record2()])
+
+        connector.process_dns_records()
+
+        self.assertTrue(connector.edgedns.get_records.assert_called_once)
+        self.assertEqual(connector.event_handler.syslogger.info.call_count, 2)
+
+    # Generic tests
+
+    def test_dns_records_disabled(self):
+        config = test_data.create_splunk_config()
+        config.edgedns = None
+        connector = Connector(config)
+
+        connector.log_manager.get_next_log = MagicMock(return_value=None)
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
+
+        connector.process_dns_records()
+
+        self.assertIsNone(connector.edgedns)
+
+    def test_logs_none_available(self):
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
 
         connector.log_manager.get_next_log = MagicMock(return_value=None)
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk._post = MagicMock()
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
         connector.log_manager.save_resume_data.assert_not_called()
-        connector.splunk._post.assert_not_called()
+        connector.event_handler._post.assert_not_called()
 
-    def test_run_unexpected_error(self):
-        config = test_data.create_config()
+    def test_logs_server_error(self):
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -125,7 +229,8 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file1, log_file2, None])
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk._post = MagicMock(
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock(
             side_effect=itertools.chain([None, ConnectionError()], itertools.repeat(None)))
 
         connector.process_log_files()
@@ -141,14 +246,37 @@ class ConnectorTest(unittest.TestCase):
         connector.log_manager.save_resume_data.assert_called()
         self.assertEqual(connector.log_manager.save_resume_data.call_count, 2)
 
-        connector.splunk._post.assert_called()
-        self.assertEqual(connector.splunk._post.call_count, 4)
+        connector.event_handler._post.assert_called()
+        self.assertEqual(connector.event_handler._post.call_count, 4)
 
-    def test_resume_from_line_number(self):
+    def test_logs_line_error(self):
+        config = test_data.create_splunk_config()
+        assert config.edgedns is not None
+        config.edgedns.send_records = False
+        connector = Connector(config)
+
+        log_file = test_data.get_ns_file4()
+        test_data.download_uncompress_file(log_file)
+
+        connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
+        connector.log_manager.save_resume_data = MagicMock()
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
+
+        connector.process_log_files()
+
+        self.assertTrue(log_file.processed)
+        self.assertEqual(log_file.last_processed_line, 16)
+        self.assertFalse(os.path.isfile(log_file.local_path_txt))
+
+        connector.log_manager.save_resume_data.assert_called_once()
+        connector.event_handler._post.assert_called()
+
+    def test_logs_resume_from_line_number(self):
         lines_already_processed = 7
         total_lines = 15
 
-        config = test_data.create_config()
+        config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
         connector = Connector(config)
@@ -159,7 +287,8 @@ class ConnectorTest(unittest.TestCase):
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
         connector.log_manager.save_resume_data = MagicMock()
-        connector.splunk._post = MagicMock()
+        assert isinstance(connector.event_handler, Splunk)
+        connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
@@ -168,22 +297,13 @@ class ConnectorTest(unittest.TestCase):
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
         connector.log_manager.save_resume_data.assert_called_once()
-        connector.splunk._post.assert_called()
-        self.assertEqual(connector.splunk._post.call_count, 1)
-
-    def test_process_dns_records(self):
-        config = test_data.create_config()
-        connector = Connector(config)
-
-        connector.log_manager.get_next_log = MagicMock(return_value=None)
-        connector.splunk._post = MagicMock()
-        assert connector.edgedns is not None
-        connector.edgedns.get_records = MagicMock(return_value=[test_data.create_dns_record1, test_data.create_dns_record2])
-
-        connector.process_log_files()
-
-        self.assertTrue(connector.edgedns.get_records.assert_called_once)
-
+        connector.event_handler._post.assert_called()
+        self.assertEqual(connector.event_handler._post.call_count, 1)
+        
+    @staticmethod
+    def read_log_lines() -> list[str]:
+        with open(ConnectorTest._TEST_LOG_FILENAME, 'r', encoding='utf-8') as file:
+            return file.readlines()
 
 if __name__ == '__main__':
     unittest.main()

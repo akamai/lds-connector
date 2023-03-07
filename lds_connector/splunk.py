@@ -15,21 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import socket
-from datetime import datetime, timezone
-from urllib.parse import urljoin
-import json
 from typing import Any
+from urllib.parse import urljoin
 
-import parse
 import requests
 
 from .config import Config
-from .edgedns_manager import DnsRecord
+from .dns_record import DnsRecord
+from .handler import Handler
 from .json import CustomJsonEncoder
+from .log_file import LogEvent
 
-class Splunk:
+
+class Splunk(Handler):
     """
     Splunk log line handler. Responsible for converting log lines to Splunk events
     """
@@ -41,7 +42,7 @@ class Splunk:
         self.log_queue = []
         self.dns_queue = []
 
-    def add_log_line(self, log_line: str) -> None:
+    def add_log_line(self, log_event: LogEvent) -> None:
         """
         Convert a log line to an HEC event and add it to the queue.
 
@@ -51,18 +52,13 @@ class Splunk:
         Returns: None
         """
 
-        try:
-            timestamp_sec = self._parse_timestamp(log_line)
-        except ValueError:
-            logging.warning('Failed parsing timestamp from logline [%s]', log_line)
-            return
-
         hec_json = {
-            'time': timestamp_sec,
+            'time': log_event.timestamp.timestamp(),
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': log_line
+            'event': log_event.log_line
         }
+        assert self.config.splunk is not None
         if self.config.splunk.lds_hec.source_type:
             hec_json['sourcetype'] = self.config.splunk.lds_hec.source_type
         if self.config.splunk.lds_hec.index:
@@ -87,6 +83,7 @@ class Splunk:
             'event': dns_record
         }
 
+        assert self.config.splunk is not None
         assert self.config.splunk.edgedns_hec is not None
         if self.config.splunk.edgedns_hec.source_type:
             hec_json['sourcetype'] = self.config.splunk.edgedns_hec.source_type
@@ -105,6 +102,7 @@ class Splunk:
         Returns:
             bool: If events were published, true. Otherwise, false.
         """
+        assert self.config.splunk is not None
         return self._publish(
             queue=self.log_queue,
             batch_size=self.config.splunk.lds_hec.event_batch_size,
@@ -121,6 +119,7 @@ class Splunk:
         Returns:
             bool: If events were published, true. Otherwise, false.
         """
+        assert self.config.splunk is not None
         assert self.config.splunk.edgedns_hec is not None
         return self._publish(
             queue=self.dns_queue,
@@ -136,6 +135,7 @@ class Splunk:
         Returns: None
         """
         self.log_queue.clear()
+        self.dns_queue.clear()
 
     def _publish(self, queue: list[dict[str, Any]], batch_size: int, token: str, force: bool):
         logging.debug('Publishing events to Splunk')
@@ -146,6 +146,7 @@ class Splunk:
         if len(queue) < batch_size and not force:
             return False
 
+        assert self.config.splunk is not None
         protocol = "https://" if self.config.splunk.hec_use_ssl else "http://"
         baseurl = f'{protocol}{self.config.splunk.host}:{self.config.splunk.hec_port}'
         url = urljoin(baseurl, Splunk._HEC_ENDPOINT)
@@ -163,26 +164,3 @@ class Splunk:
         response = requests.post(url, headers=headers, data=events_json, timeout=Splunk._TIMEOUT_SEC)
         if response.status_code != 200:
             logging.error('Splunk HEC responded with [%s]. Ignoring and moving on', response.status_code)
-
-    def _parse_timestamp(self, log_line: str) -> float:
-        """
-        Parse the epoch timestamp in seconds from a log line
-
-        Parameters:
-            log_line (str): The log line to parse 
-
-        Returns:
-            float: The epoch timestamp in seconds
-        """
-        # Parse timestamp substring using format string
-        parse_result = parse.parse(self.config.lds.timestamp_parse, log_line)
-        assert isinstance(parse_result, parse.Result)
-        timestamp_substr = parse_result['timestamp']
-
-        # Convert timestamp substring to UNIX timestamp
-        if self.config.lds.timestamp_strptime == '%s':
-            return float(timestamp_substr)
-        else:
-            timestamp_datetime = datetime.strptime(timestamp_substr, self.config.lds.timestamp_strptime)
-            timestamp_datetime = timestamp_datetime.replace(tzinfo=timezone.utc)
-            return timestamp_datetime.timestamp()

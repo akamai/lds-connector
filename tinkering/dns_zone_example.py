@@ -34,7 +34,7 @@ KEY_EDGEDNS_ZONE = 'zone_name'
 def main():
     parser = argparse.ArgumentParser(
         prog = 'dns_zone_example',
-        description = 'Fetch Akamai EdgeDNS zone data')
+        description = 'Fetch Akamai Edge DNS zone data')
     parser.add_argument('-c', '--config', required=True, type=argparse.FileType('r'))
     args = parser.parse_args()
 
