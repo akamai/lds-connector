@@ -19,10 +19,12 @@ import os
 from os import path
 import shutil
 import json
+from datetime import datetime, timezone
 
 from lds_connector.config import *
 from lds_connector.log_manager import LogFile, LogNameProps, LogManager
 from lds_connector.edgedns_manager import DnsRecord
+from lds_connector.log_file import LogEvent
 
 
 DATA_DIR = path.join(path.dirname(__file__), 'data')
@@ -36,8 +38,24 @@ NS_LIST_RESPONSE = """<?xml version="1.0" encoding="ISO-8859-1"?>
     <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-1.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
 </list>"""
 
+DNS_LOG_LINES = [
+    '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,52149,edgedns.zone,IN,CAA,E,4096,D,,300:0 issue "ca.sectigo.com" 300:0 issue "ca.digicert.com" SIGNx1 \n',
+    '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,64062,2ww-nigiro.edgedns.zone,IN,A,E,4096,D,,3:NXDOMAIN \n',
+    '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,43215,edgedns.zone,IN,NS,E,4096,D,,86400:a13-67.akam.net 86400:a11-66.akam.net 86400:a22-64.akam.net 86400:a24-65.akam.net 86400:a28-66.akam.net 86400:a1-247.akam.net SIGNx1 \n',
+    '416458 - 1672713883 03/01/2023 02:44:43,2600:1406:1a00:2::687d:da8c,44473,edgedns.zone,IN,SOA,,,,,86400:a1-247.akam.net hostmaster.edgedns.zone 2019102599 3600 600 604800 300 \n'
+]
 
-def create_config():
+DNS_LOG_TIMESTAMPS = [1672715199.0, 1672715199.0, 1672715199.0, 1672713883.0]
+
+DNS_LOG_EVENTS = [
+    LogEvent(DNS_LOG_LINES[0], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[0]).astimezone(timezone.utc)),
+    LogEvent(DNS_LOG_LINES[1], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[1]).astimezone(timezone.utc)),
+    LogEvent(DNS_LOG_LINES[2], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[2]).astimezone(timezone.utc)),
+    LogEvent(DNS_LOG_LINES[3], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[3]).astimezone(timezone.utc))
+]
+
+
+def create_splunk_config():
     return Config(
         splunk=SplunkConfig(
             host="127.0.0.1",
@@ -56,6 +74,7 @@ def create_config():
                 event_batch_size=10
             )
         ),
+        syslog=None,
         edgedns=EdgeDnsConfig(
             send_records=True,
             zone_name='edgedns.zone',
@@ -83,6 +102,21 @@ def create_config():
             poll_period_sec=60
         )
     )
+
+
+def create_syslog_config():
+    config = create_splunk_config()
+
+    config.splunk = None
+    config.syslog = SysLogConfig(
+        host='192.168.0.1',
+        port=514,
+        use_tcp=False,
+        lds_app_name='test_lds_app_name',
+        edgedns_app_name='test_edgedns_app_name'
+    )
+
+    return config
 
 
 def get_ns_file1():
@@ -142,6 +176,28 @@ def get_ns_file3():
             sorted=False,
             start_time=1672718400.0,
             part=1,
+            encoding='gz'
+        ),
+        local_path_gz='',
+        local_path_txt='',
+        processed=False,
+        last_processed_line=-1
+    )
+
+
+def get_ns_file4():
+    return LogFile(
+        ns_path_gz='/123456/cam/logs/cam_123456.edns_U.202301030500-0600-0.gz',
+        filename_gz='cam_123456.edns_U.202301030500-0600-0.gz',
+        size=3456,
+        md5='d850f04cdb48312a9be171e214c0b4ee',
+        name_props= LogNameProps(
+            customer_id='cam',
+            cp_code=123456,
+            format='edns',
+            sorted=False,
+            start_time=1672718400.0,
+            part=0,
             encoding='gz'
         ),
         local_path_gz='',

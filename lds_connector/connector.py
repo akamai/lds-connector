@@ -18,11 +18,16 @@
 import logging
 import os
 from typing import Optional
+from datetime import datetime, timezone
+import parse
 
 from .config import Config
-from .log_manager import LogManager, LogFile
-from .splunk import Splunk
 from .edgedns_manager import EdgeDnsManager, create_edgedns_manager
+from .handler import Handler
+from .log_file import LogFile, LogEvent
+from .log_manager import LogManager
+from .splunk import Splunk
+from .syslog import SysLog
 
 
 class Connector:
@@ -33,8 +38,14 @@ class Connector:
     def __init__(self, config: Config):
         self.config = config
         self.log_manager: LogManager = LogManager(config)
-        self.splunk: Splunk = Splunk(config)
         self.edgedns: Optional[EdgeDnsManager] = create_edgedns_manager(config)
+        self.event_handler: Handler
+
+        if config.splunk is not None:
+            self.event_handler = Splunk(config)
+        if config.syslog is not None:
+            self.event_handler = SysLog(config)
+        assert self.event_handler is not None
 
     def process_dns_records(self) -> None:
         """
@@ -49,10 +60,10 @@ class Connector:
         # TODO: get_records should return records page-by-page
 
         for record in records:
-            self.splunk.add_dns_record(record)
-            self.splunk.publish_dns_records()
+            self.event_handler.add_dns_record(record)
+            self.event_handler.publish_dns_records()
 
-        self.splunk.publish_dns_records(force=True)
+        self.event_handler.publish_dns_records(force=True)
 
         logging.info('Processed DNS records')
 
@@ -86,31 +97,79 @@ class Connector:
         logging.info('Processing log file %s', log_file.local_path_txt)
         try:
             with open(log_file.local_path_txt, 'r', encoding='utf-8') as file:
-                log_line = file.readline()
-                line_number = 0
-                while log_line:
-                    line_number += 1
-                    if line_number > log_file.last_processed_line:
-                        # Only handle lines that haven't been processed already
-                        self.splunk.add_log_line(log_line)
-                        if self.splunk.publish_log_lines():
-                            log_file.last_processed_line = line_number
-
-                    log_line = file.readline()
-
-                # Publish remaining log lines
-                if self.splunk.publish_log_lines(force=True):
-                    log_file.last_processed_line = line_number
-                log_file.processed = True
+                self._process_log_lines(log_file, file)
 
             os.remove(log_file.local_path_txt)
         except Exception as exception:
-            logging.error('An unexpected error has occurred processing log file. [%s]. Ignoring and moving on', exception)
+            logging.error('An unexpected error has occurred processing log file. Ignoring and moving on [%s]', exception)
         finally:
             if log_file.last_processed_line != -1:
                 # Only update resume save file if some lines were processed
                 # If multiple log files fail (say Splunk is down), we want to resume at the first failing log file
                 self.log_manager.save_resume_data()
-            self.splunk.clear()
+            self.event_handler.clear()
             logging.info('Processed log file %s. Finished processing: %s. Last line processed: %d', \
                 log_file.local_path_txt, log_file.processed, log_file.last_processed_line)
+
+    def _process_log_lines(self, log_file: LogFile, file):
+        log_line = file.readline()
+        line_number = 0
+
+        # Skip lines that have already been processed
+        while line_number <= log_file.last_processed_line:
+            line_number += 1
+
+            log_line = file.readline()
+
+        while log_line:
+            line_number += 1
+            try:
+                log_event = self._create_log_event(log_line)
+                self.event_handler.add_log_line(log_event)
+            except Exception as exception:
+                logging.error('Failed processing log line. Ignoring and moving on. [%s]', exception)
+                log_line = file.readline()
+                continue
+
+            if self.event_handler.publish_log_lines():
+                log_file.last_processed_line = line_number
+
+            log_line = file.readline()
+
+        # Publish remaining log lines
+        if self.event_handler.publish_log_lines(force=True):
+            log_file.last_processed_line = line_number
+        log_file.processed = True
+
+    def _create_log_event(self, log_line: str):
+        if not log_line[-1] == '\n':
+            logging.warning('Log line was missing new line. Adding it')
+            log_line += '\n'
+
+        return LogEvent(
+            log_line=log_line,
+            timestamp=self._parse_timestamp(log_line)
+        )
+
+    def _parse_timestamp(self, log_line: str) -> datetime:
+        """
+        Parse the epoch timestamp in seconds from a log line
+
+        Parameters:
+            log_line (str): The log line to parse 
+
+        Returns:
+            float: The epoch timestamp in seconds
+        """
+
+        # Parse timestamp substring using format string
+        parse_result = parse.parse(self.config.lds.timestamp_parse, log_line)
+        assert isinstance(parse_result, parse.Result)
+        timestamp_substr = parse_result['timestamp']
+
+        if self.config.lds.timestamp_strptime == '%s':
+            return datetime.fromtimestamp(float(timestamp_substr)).astimezone(timezone.utc)
+
+        timestamp_datetime = datetime.strptime(timestamp_substr, self.config.lds.timestamp_strptime)
+        timestamp_datetime = timestamp_datetime.replace(tzinfo=timezone.utc)
+        return timestamp_datetime

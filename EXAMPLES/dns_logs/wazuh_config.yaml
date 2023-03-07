@@ -1,0 +1,21 @@
+---
+# All credentials in this file have been revoked for security purposes
+
+syslog :
+  host : '127.0.0.1'
+  port: 513
+  use_tcp : true
+  lds_app_name : 'lds_dns_log'
+  edgedns_app_name : 'lds_dns_record'
+
+lds :
+  ns : 
+    host : "edge-dns-nsu.akamaihd.net"
+    upload_account : "cmackint1"
+    cp_code : "934217"
+    key : "3tIWaTyYvv22jw0ZadHC8USilhLTDzi5qQQtD0UlcNJNHKQ"
+    use_ssl : true 
+    log_dir : 'logs'
+  log_download_dir : 'tmp/'
+  timestamp_parse : '{} - {} {timestamp},{}'
+  timestamp_strptime : '%d/%m/%Y %H:%M:%S'

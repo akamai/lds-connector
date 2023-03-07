@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass
 import logging
 import os
+from dataclasses import dataclass
 from typing import Optional
+
 import yaml
 
 
@@ -37,6 +38,15 @@ class SplunkConfig:
     hec_use_ssl: bool
     lds_hec: HecConfig
     edgedns_hec: Optional[HecConfig]
+
+
+@dataclass
+class SysLogConfig:
+    host: str
+    port: int
+    use_tcp: bool
+    lds_app_name: str
+    edgedns_app_name: Optional[str]
 
 
 @dataclass
@@ -75,7 +85,8 @@ class LdsConfig:
 
 @dataclass
 class Config:
-    splunk: SplunkConfig
+    splunk: Optional[SplunkConfig]
+    syslog: Optional[SysLogConfig]
     lds: LdsConfig
     edgedns: Optional[EdgeDnsConfig]
     open: Optional[AkamaiOpenConfig]
@@ -104,6 +115,13 @@ _KEY_SPLUNK_HEC_TOKEN = 'token'
 _KEY_SPLUNK_HEC_SOURCE_TYPE = 'source_type'
 _KEY_SPLUNK_HEC_INDEX = 'index'
 
+_KEY_SYSLOG = 'syslog'
+_KEY_SYSLOG_HOST = 'host'
+_KEY_SYSLOG_PORT = 'port'
+_KEY_SYSLOG_USE_TCP = 'use_tcp'
+_KEY_SYSLOG_LDS_APP_NAME = 'lds_app_name'
+_KEY_SYSLOG_EDGEDNS_APP_NAME = 'edgedns_app_name'
+
 _KEY_LDS = 'lds'
 _KEY_LDS_LOG_DIR = 'log_download_dir'
 _KEY_LDS_TIMESTAMP_PARSE = 'timestamp_parse'
@@ -119,13 +137,27 @@ _KEY_NS_SSL = 'use_ssl'
 _KEY_NS_LOG_DIR = 'log_dir'
 
 
-def _is_config_valid(config: Config) -> bool:
+def is_config_valid(config: Config) -> bool:
+    if config.splunk is None and config.syslog is None:
+        logging.error('Invalid config. No destinations configured')
+        return False
+
+    if config.splunk is not None and config.syslog is not None:
+        logging.error('Invalid config. Only one destination (Splunk or SysLog) can be configured')
+        return False
+
     if config.edgedns is not None and config.edgedns.send_records:
         if config.open is None:
             logging.error('Invalid config. DNS record sending enabled but Akamai OPEN credentials not provided')
             return False
-        if config.splunk.edgedns_hec is None:
+        if config.edgedns.zone_name is None:
+            logging.error('Invalid config. DNS record sending enabled but no zone provided')
+            return False
+        if config.splunk is not None and config.splunk.edgedns_hec is None:
             logging.error('Invalid config. DNS record sending enabled but Splunk HEC token not provided')
+            return False
+        if config.syslog is not None and config.syslog.edgedns_app_name is None:
+            logging.error('Invalid config. DNS record sending enabled by SysLog app name not provided')
             return False
 
     return True
@@ -147,7 +179,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
     yaml_config = yaml.safe_load(yaml_stream)
 
     try:
-        # Akamai EdgeDNS Config
+        # Akamai Edge DNS Config
         edgedns_yaml = yaml_config.get(_KEY_EDGEDNS, None)
         edgedns_config = None
         if edgedns_yaml is not None:
@@ -170,30 +202,32 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             )
 
         # Splunk Config
-        splunk_yaml = yaml_config[_KEY_SPLUNK]
-        splunk_lds_yaml = splunk_yaml[_KEY_SPLUNK_HEC_LDS]
-        splunk_config = SplunkConfig(
-            host=splunk_yaml[_KEY_SPLUNK_HOST],
-            hec_port=splunk_yaml[_KEY_SPLUNK_HEC_PORT],
-            hec_use_ssl=splunk_yaml[_KEY_SPLUNK_HEC_SSL],
-            lds_hec=HecConfig(
-                source_type=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_SOURCE_TYPE, None),
-                index=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_INDEX, None),
-                token=splunk_lds_yaml[_KEY_SPLUNK_HEC_TOKEN],
-                event_batch_size=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
-            ),
-            edgedns_hec=None
-        )
-
-        # Splunk EdgeDNS HEC Config 
-        splunk_edgedns_yaml = splunk_yaml.get(_KEY_SPLUNK_HEC_EDGEDNS)
-        if splunk_edgedns_yaml is not None:
-            splunk_config.edgedns_hec = HecConfig(
-                source_type=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_SOURCE_TYPE, None),
-                index=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_INDEX, None),
-                token=splunk_edgedns_yaml[_KEY_SPLUNK_HEC_TOKEN],
-                event_batch_size=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
+        splunk_yaml = yaml_config.get(_KEY_SPLUNK, None)
+        splunk_config = None
+        if splunk_yaml is not None:
+            splunk_lds_yaml = splunk_yaml[_KEY_SPLUNK_HEC_LDS]
+            splunk_config = SplunkConfig(
+                host=splunk_yaml[_KEY_SPLUNK_HOST],
+                hec_port=splunk_yaml[_KEY_SPLUNK_HEC_PORT],
+                hec_use_ssl=splunk_yaml[_KEY_SPLUNK_HEC_SSL],
+                lds_hec=HecConfig(
+                    source_type=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_SOURCE_TYPE, None),
+                    index=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_INDEX, None),
+                    token=splunk_lds_yaml[_KEY_SPLUNK_HEC_TOKEN],
+                    event_batch_size=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
+                ),
+                edgedns_hec=None
             )
+
+            # Splunk Edge DNS HEC Config 
+            splunk_edgedns_yaml = splunk_yaml.get(_KEY_SPLUNK_HEC_EDGEDNS)
+            if splunk_edgedns_yaml is not None:
+                splunk_config.edgedns_hec = HecConfig(
+                    source_type=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_SOURCE_TYPE, None),
+                    index=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_INDEX, None),
+                    token=splunk_edgedns_yaml[_KEY_SPLUNK_HEC_TOKEN],
+                    event_batch_size=splunk_edgedns_yaml.get(_KEY_SPLUNK_HEC_BATCH_SIZE, 10)
+                )
 
         # LDS Config
         lds_yaml = yaml_config[_KEY_LDS]
@@ -213,14 +247,27 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             poll_period_sec=lds_yaml.get(_KEY_LDS_LOG_POLL_PERIOD_SEC, 60)
         )
 
+        # SysLog Config
+        syslog_yaml = yaml_config.get(_KEY_SYSLOG, None)
+        syslog_config = None
+        if syslog_yaml is not None:
+            syslog_config = SysLogConfig(
+                host=syslog_yaml[_KEY_SYSLOG_HOST],
+                port=syslog_yaml[_KEY_SYSLOG_PORT],
+                use_tcp=syslog_yaml[_KEY_SYSLOG_USE_TCP],
+                lds_app_name=syslog_yaml[_KEY_SYSLOG_LDS_APP_NAME],
+                edgedns_app_name=syslog_yaml.get(_KEY_SYSLOG_EDGEDNS_APP_NAME, None)
+            )
+
         config = Config(
-            lds=lds_config,
             splunk=splunk_config,
+            syslog=syslog_config,
+            lds=lds_config,
             edgedns=edgedns_config,
             open=open_config
         )
 
-        if not _is_config_valid(config):
+        if not is_config_valid(config):
             return None
 
         logging.info('Parsed configuration from file')

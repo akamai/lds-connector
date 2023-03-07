@@ -1,0 +1,6 @@
+<group name="akamai,edge_dns">
+  <rule id="100001" level="5">
+    <description>Akamai Edge DNS Log</description>
+    <decoded_as>lds_dns_log_decoder</decoded_as>
+  </rule>
+</group>
