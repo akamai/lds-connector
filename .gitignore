@@ -1,7 +1,8 @@
 .DS_Store
 env/
-config.yaml
-syslog_config.yaml
 .vscode/
 .coverage
 htmlcov/
+splunk_config.yaml
+syslog_config.yaml
+splunk_config_rec.yaml
