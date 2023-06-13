@@ -38,6 +38,7 @@ class LogManager:
     """
     _RESUME_PICKLE_FILE_NAME = 'resume.pickle'
 
+
     def __init__(self, config: Config):
         self.current_log_file: Optional[LogFile] = None
         self.last_log_file: Optional[LogFile] = None
@@ -51,6 +52,8 @@ class LogManager:
             key=self.config.lds.ns.key,
             ssl=self.config.lds.ns.use_ssl
         )
+
+        self.asc_log_files_cache = []
 
         self.resume_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_PICKLE_FILE_NAME)
 
@@ -143,22 +146,24 @@ class LogManager:
         """
         logging.debug('Determining next log file')
 
-        log_files = self._list()
+        if len(self.asc_log_files_cache) == 0:
+            log_files = self._list()
+            self.asc_log_files_cache = sorted(log_files, key=lambda f: (f.name_props.start_time, f.name_props.part))
 
-        if len(log_files) == 0:
+        if len(self.asc_log_files_cache) == 0:
             logging.debug('No log files in NetStorage')
             return None
-
-        ascending_log_files = sorted(log_files, key=lambda f: (f.name_props.start_time, f.name_props.part))
 
         # No previously processed log file. Pick first available
         if self.last_log_file is None:
             logging.debug('No previously processed log file. Selecting oldest')
-            logging.debug('Determined next log file: [%s]', ascending_log_files[0].filename_gz)
-            return ascending_log_files[0]
+            logging.debug('Determined next log file: [%s]', self.asc_log_files_cache[0].filename_gz)
+            return self.asc_log_files_cache.pop(0)
 
         logging.debug('Previously processed log file. Selecting oldest after this')
-        for log_file in ascending_log_files:
+        next_log_file = None
+        while len(self.asc_log_files_cache) != 0:
+            log_file = self.asc_log_files_cache.pop(0)
             if log_file.name_props.start_time < self.last_log_file.name_props.start_time:
                 # Log file's start time is before last file's start time. Skip it
                 continue
@@ -170,10 +175,14 @@ class LogManager:
                 continue
 
             logging.debug('Determined next log file: [%s]', log_file.filename_gz)
-            return log_file
+            next_log_file = log_file
+            break
 
-        logging.debug('No unprocessed log files in NetStorage')
-        return None
+        if next_log_file is None:
+            logging.debug('No unprocessed log files in NetStorage')
+
+        return next_log_file
+
 
     def _list(self) -> list[LogFile]:
         """
