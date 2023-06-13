@@ -194,6 +194,21 @@ class LogManagerTest(unittest.TestCase):
 
         self.assertEqual(next_log, test_data.get_ns_file2())
 
+    def test_determine_next_log_cache_populated(self):
+        log_manager = LogManager(test_data.create_splunk_config())
+
+        log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
+
+        next_log = log_manager._determine_next_log()
+
+        self.assertEqual(next_log, test_data.get_ns_file1())
+        self.assertEqual(log_manager._list.call_count, 1)
+
+        log_manager.last_log_file = test_data.get_ns_file1()
+        next_log = log_manager._determine_next_log()
+        self.assertEqual(next_log, test_data.get_ns_file2())
+        self.assertEqual(log_manager._list.call_count, 1)
+
     def test_get_next_log(self):
         """
         If the log manager hasn't processed any log files
@@ -230,6 +245,8 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
+        
+        log_manager._list = MagicMock(return_value = [])
         self.assertIsNone(log_manager.get_next_log())
 
     def test_get_next_log_sequence(self):

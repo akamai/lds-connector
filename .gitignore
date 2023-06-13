@@ -6,3 +6,6 @@ htmlcov/
 splunk_config.yaml
 syslog_config.yaml
 splunk_config_rec.yaml
+customer_config.yaml
+__pycache__/
+
