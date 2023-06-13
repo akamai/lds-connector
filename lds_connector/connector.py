@@ -106,7 +106,7 @@ class Connector:
             if log_file.last_processed_line != -1:
                 # Only update resume save file if some lines were processed
                 # If multiple log files fail (say Splunk is down), we want to resume at the first failing log file
-                self.log_manager.save_resume_data()
+                self.log_manager.update_last_log_files()
             self.event_handler.clear()
             logging.info('Processed log file %s. Finished processing: %s. Last line processed: %d', \
                 log_file.local_path_txt, log_file.processed, log_file.last_processed_line)
