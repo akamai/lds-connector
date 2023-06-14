@@ -242,8 +242,11 @@ class LogManagerTest(unittest.TestCase):
 
     def test_get_next_log_multiple_zones(self): 
         """
-        If the log manager hasn't processed any log files
-        Then the log manager fetches/unzips the first log file chronologically
+        If there are multiple zones with the same timestamp,
+        Then the log manager returns the log files chronologically
+
+        If the log file cache is exhausted
+        Then fully-processed log files aren't reprocessed.
         """
         config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
@@ -256,11 +259,28 @@ class LogManagerTest(unittest.TestCase):
         expected_log_file = test_data.get_ns_file1()
         LogManagerTest.set_log_file_paths(expected_log_file)
         self.assertEqual(log_file, expected_log_file)
+        log_file.processed = True
 
         log_file = log_manager.get_next_log()
         expected_log_file = test_data.get_ns_file5()
         LogManagerTest.set_log_file_paths(expected_log_file)
         self.assertEqual(log_file, expected_log_file)
+        log_file.processed = True
+
+        log_file = log_manager.get_next_log()
+        expected_log_file = test_data.get_ns_file2()
+        LogManagerTest.set_log_file_paths(expected_log_file)
+        self.assertEqual(log_file, expected_log_file)
+        log_file.processed = True
+        
+        log_file = log_manager.get_next_log()
+        expected_log_file = test_data.get_ns_file3()
+        LogManagerTest.set_log_file_paths(expected_log_file)
+        self.assertEqual(log_file, expected_log_file)
+        log_file.processed = True
+
+        log_file = log_manager.get_next_log()
+        self.assertIsNone(log_file)
 
 
     def test_get_next_log_none(self):
