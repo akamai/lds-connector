@@ -13,6 +13,12 @@ or Akamai NetStorage.
 The LDS Connector is a script that monitors a NetStorage location for LDS logs, parses them into log events, and sends
 them to your data platform.
 
+The LDS Connector's **Log Delivery** feature monitors NetStorage for LDS logs, parses them into log events, and delivers
+them to your data platform.
+
+The LDS Connector's **Record Set Delivery** feature periodically fetches an Edge DNS record set using the Akamai APIs,
+parses them into log events, and delivers them to your data platform. This currently only suports a single zone.
+
 This document will show you
 1. How to configure Log Delivery Service to send your Akamai logs to NetStorage
 2. How to configure your third-party data platform to receive Akamai logs
@@ -44,11 +50,13 @@ Configuration
 
 The script is configured using a YAML file passed as a command line argument. 
 
-Use `config_template.yaml` as a template. It includes a comment describing each field.
+Use `config_template.yaml` as a template. It includes a comment describing each field. Optional fields can be 
+deleted if they're not needed. 
 
-The README files linked above contain more information on how these are set.
-See the [LDS Connector documentation](docs/lds_connector/README.md).
+The documents linked in the above Prerequisites section detail how to set each of these fields. They include 
+annotated screenshots. Please consult this documentation.
 
+See [here](docs/lds_connector/README.md) for further details on the `lds` fields.
 
 Installation
 ------------
