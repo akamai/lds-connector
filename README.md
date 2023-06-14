@@ -1,6 +1,8 @@
 Akamai Log Delivery Service Connector 
 =====================================
 
+Version 2.1 - June 14, 2023
+
 Introduction
 ------------
 
