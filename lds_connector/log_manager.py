@@ -123,10 +123,12 @@ class LogManager:
         """
         logging.debug('Determining next log file')
 
+        # Log file list cache is empty. Refresh it.
         if len(self.asc_log_files_cache) == 0:
             log_files = self._list()
             self.asc_log_files_cache = sorted(log_files, key=lambda f: (f.name_props.start_time, f.name_props.part))
 
+        # Log file list cache still empty after refresh. No available log files.
         if len(self.asc_log_files_cache) == 0:
             logging.debug('No log files in NetStorage')
             return None

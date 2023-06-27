@@ -20,6 +20,7 @@ import logging
 import socket
 from typing import Any
 from urllib.parse import urljoin
+import time
 
 import requests
 
@@ -154,13 +155,27 @@ class Splunk(Handler):
 
         events_json = '\n'.join([json.dumps(event, cls=CustomJsonEncoder) for event in queue])
 
-        self._post(url=url, headers=headers, events_json=events_json)
+        self._post_retry(url=url, headers=headers, events_json=events_json)
 
         queue.clear()
         logging.debug('Published events to Splunk')
         return True
+    
+    def _post_retry(self, url, headers, events_json) -> None:
+        while not self._post(url=url, headers=headers, events_json=events_json):
+            logging.info('Splunk call failed. Retrying...')
+            time.sleep(1)
 
-    def _post(self, url, headers, events_json) -> None:
-        response = requests.post(url, headers=headers, data=events_json, timeout=Splunk._TIMEOUT_SEC)
-        if response.status_code != 200:
-            logging.error('Splunk HEC responded with [%s]. Ignoring and moving on', response.status_code)
+    def _post(self, url, headers, events_json) -> bool:
+        try:
+            response = requests.post(url, headers=headers, data=events_json, timeout=Splunk._TIMEOUT_SEC)
+            if response.status_code != 200:
+                logging.error('Splunk HEC responded with [%s]', response.status_code)
+                return False
+            return True
+        except Exception as e: 
+            logging.error('Splunk HEC exception [%s]', e)
+            return False
+
+
+            

@@ -108,11 +108,14 @@ Let's dig into how it works a bit.
 - The script is configured using a YAML file. This is passed as a command line argument. The script must be restarted
   to process any changes to the YAML file.
 - The script processes the log files chronologically. The log files are named using 
-  [a standard format](https://techdocs.akamai.com/log-delivery/docs/file-names) that contains the time range and a part
-  number. The script fetches the listing of available log files and sorts them by the start time. 
-- The script is able to resume processing where it left off. The script saves the current/last log file's metadata to 
-  disk. When the script is first run, it checks the saved metadata and resumes where it left off.
+  [a standard format](https://techdocs.akamai.com/log-delivery/docs/file-names) that contains the time range, 
+  an ID (typically Edge DNS zone), and a part number. The script fetches the listing of available log files and sorts them by the start time. 
 - The script can deliver logs to either Splunk or Wazuh. 
+- The script keeps track of the last processed log file and line for each ID (zone). This metadata is written to disk 
+  such that the script can resume where it left off if restarted.
+
+If the script fails to parse a log line, it logs an error and skips it.
+If the script fails to publish a log event to Splunk, it retries until successful.
 
 This script can optionally deliver Edge DNS records for a given zone.
 - The user enables Edge DNS record sending for a given zone in the YAML config

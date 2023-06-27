@@ -139,6 +139,7 @@ def get_ns_file1():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE1_LINES = 15
 
 
 def get_ns_file2():
@@ -161,6 +162,7 @@ def get_ns_file2():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE2_LINES = 15
 
 
 def get_ns_file3():
@@ -183,6 +185,7 @@ def get_ns_file3():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE3_LINES = 15
 
 
 def get_ns_file4():
@@ -205,6 +208,7 @@ def get_ns_file4():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE4_LINES = 16
 
 def get_ns_file5():
     return LogFile(
@@ -226,6 +230,7 @@ def get_ns_file5():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE5_LINES = 16
 
 
 DNS_RECORD1_JSON = '{"time_fetched_sec": 0, "zone": "edgedns.zone", "name": "edgedns.zone", "type": "CAA", ' \
