@@ -42,7 +42,7 @@ class LogManager:
     def __init__(self, config: Config):
         self.current_log_file: Optional[LogFile] = None
 
-        self.last_log_files_by_zone: dict[str: LogFile] = {}
+        self.last_log_files_by_zone: dict[str, LogFile] = {}
 
         self.config = config
 
