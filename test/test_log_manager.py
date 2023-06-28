@@ -41,6 +41,15 @@ class LogManagerTest(unittest.TestCase):
         if path.isdir(test_data.TEMP_DIR):
             shutil.rmtree(test_data.TEMP_DIR)
 
+    def set_last_processed(log_manager: LogManager, log_file: LogFile):
+        log_file.processed = True
+        log_manager.last_log_files_by_zone = {'cam': log_file}
+
+    def set_log_file_paths(log_file: LogFile):
+        log_file.local_path_txt = \
+            os.path.join(test_data.TEMP_DIR, log_file.filename_gz.replace('.gz', '.txt'))
+        log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, log_file.filename_gz)
+
     def test_parse_log_name(self):
         """
         If the log file name is valid
@@ -125,7 +134,7 @@ class LogManagerTest(unittest.TestCase):
         Then the log manager selects the second log file chronologically
         """
         log_manager = LogManager(test_data.create_splunk_config())
-        log_manager.last_log_file = test_data.get_ns_file1()
+        LogManagerTest.set_last_processed(log_manager, test_data.get_ns_file1())
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
@@ -140,7 +149,7 @@ class LogManagerTest(unittest.TestCase):
         Then the log manager selects the third log file
         """
         log_manager = LogManager(test_data.create_splunk_config())
-        log_manager.last_log_file = test_data.get_ns_file2()
+        LogManagerTest.set_last_processed(log_manager, test_data.get_ns_file2())
 
         log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
@@ -154,7 +163,7 @@ class LogManagerTest(unittest.TestCase):
         Then the log manager doesn't select any log file
         """
         log_manager = LogManager(test_data.create_splunk_config())
-        log_manager.last_log_file = test_data.get_ns_file3()
+        LogManagerTest.set_last_processed(log_manager, test_data.get_ns_file3())
 
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
@@ -169,7 +178,7 @@ class LogManagerTest(unittest.TestCase):
         Then the log manager doesn't select any log file
         """
         log_manager = LogManager(test_data.create_splunk_config())
-        log_manager.last_log_file = test_data.get_ns_file3()
+        LogManagerTest.set_last_processed(log_manager, test_data.get_ns_file3())
 
         log_manager._list = MagicMock(return_value = [])
 
@@ -185,7 +194,7 @@ class LogManagerTest(unittest.TestCase):
         Event if NetStorage returns the parts out-of-order
         """
         log_manager = LogManager(test_data.create_splunk_config())
-        log_manager.last_log_file = test_data.get_ns_file1()
+        LogManagerTest.set_last_processed(log_manager, test_data.get_ns_file1())
 
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file1(), test_data.get_ns_file3(), test_data.get_ns_file2()])
@@ -193,6 +202,20 @@ class LogManagerTest(unittest.TestCase):
         next_log = log_manager._determine_next_log()
 
         self.assertEqual(next_log, test_data.get_ns_file2())
+
+    def test_determine_next_log_cache_populated(self):
+        log_manager = LogManager(test_data.create_splunk_config())
+
+        log_manager._list = MagicMock(return_value = [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
+
+        next_log = log_manager._determine_next_log()
+
+        self.assertEqual(next_log, test_data.get_ns_file1())
+        self.assertEqual(log_manager._list.call_count, 1)
+
+        next_log = log_manager._determine_next_log()
+        self.assertEqual(next_log, test_data.get_ns_file2())
+        self.assertEqual(log_manager._list.call_count, 1)
 
     def test_get_next_log(self):
         """
@@ -210,14 +233,55 @@ class LogManagerTest(unittest.TestCase):
         log_file = log_manager.get_next_log()
 
         expected_log_file = test_data.get_ns_file1()
-        expected_log_file.local_path_txt = \
-            os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
-        expected_log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz)
+        LogManagerTest.set_log_file_paths(expected_log_file)
 
         assert log_file is not None
         self.assertEqual(log_file, expected_log_file)
         self.assertTrue(os.path.isfile(expected_log_file.local_path_txt))
         self.assertFalse(os.path.isfile(expected_log_file.local_path_gz))
+
+    def test_get_next_log_multiple_zones(self): 
+        """
+        If there are multiple zones with the same timestamp,
+        Then the log manager returns the log files chronologically
+
+        If the log file cache is exhausted
+        Then fully-processed log files aren't reprocessed.
+        """
+        config = test_data.create_splunk_config()
+        config.lds.log_download_dir = test_data.TEMP_DIR
+        log_manager = LogManager(config)
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3(), test_data.get_ns_file5()])
+        log_manager._download = MagicMock(wraps=test_data.download_file)
+
+        log_file = log_manager.get_next_log()
+        expected_log_file = test_data.get_ns_file1()
+        LogManagerTest.set_log_file_paths(expected_log_file)
+        self.assertEqual(log_file, expected_log_file)
+        log_file.processed = True
+
+        log_file = log_manager.get_next_log()
+        expected_log_file = test_data.get_ns_file5()
+        LogManagerTest.set_log_file_paths(expected_log_file)
+        self.assertEqual(log_file, expected_log_file)
+        log_file.processed = True
+
+        log_file = log_manager.get_next_log()
+        expected_log_file = test_data.get_ns_file2()
+        LogManagerTest.set_log_file_paths(expected_log_file)
+        self.assertEqual(log_file, expected_log_file)
+        log_file.processed = True
+        
+        log_file = log_manager.get_next_log()
+        expected_log_file = test_data.get_ns_file3()
+        LogManagerTest.set_log_file_paths(expected_log_file)
+        self.assertEqual(log_file, expected_log_file)
+        log_file.processed = True
+
+        log_file = log_manager.get_next_log()
+        self.assertIsNone(log_file)
+
 
     def test_get_next_log_none(self):
         config = test_data.create_splunk_config()
@@ -230,6 +294,8 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
+        
+        log_manager._list = MagicMock(return_value = [])
         self.assertIsNone(log_manager.get_next_log())
 
     def test_get_next_log_sequence(self):
@@ -258,7 +324,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(log_file2.filename_gz, test_data.get_ns_file2().filename_gz)
 
         log_file2.processed = True
-        log_manager.save_resume_data()
+        log_manager.update_last_log_files()
 
         # Reinitialize log manager to simulate script restart
         log_manager = LogManager(config)
@@ -279,50 +345,51 @@ class LogManagerTest(unittest.TestCase):
         resume_data.processed = True
         resume_data.last_processed_line = 4
 
-        with open(test_data.RESUME_PATH, 'wb') as file:
-            pickle.dump(resume_data, file)
+        with open(test_data.RESUME_DATA_PATH, 'wb') as file:
+            pickle.dump({'cam': resume_data}, file)
 
         config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
 
         log_manager = LogManager(config)
 
-        self.assertEqual(log_manager.resume_log_file, resume_data)
+        self.assertEqual(log_manager.last_log_files_by_zone, {'cam': resume_data})
 
     def test_resume_unfinished_log(self):
         """
         If the log manager has resume data indicating the first log file was partially processed
         Then the log manager continues processing it at the next line
         """
-        resume_data = test_data.get_ns_file1()
-        resume_data.processed = False
-        resume_data.last_processed_line = 2
-        test_data.download_file(resume_data)
-        LogManager._uncompress(resume_data)
-        with open(test_data.RESUME_PATH, 'wb') as file:
-            pickle.dump(resume_data, file)
+        resume_file = test_data.get_ns_file1()
+        resume_file.processed = False
+        resume_file.last_processed_line = 2
+        test_data.download_file(resume_file)
+        LogManager._uncompress(resume_file)
+        with open(test_data.RESUME_DATA_PATH, 'wb') as file:
+            pickle.dump({'cam': resume_file}, file)
 
         config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
         log_manager = LogManager(config)
+        log_manager._list = MagicMock(return_value = \
+            [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
+        log_manager._download = MagicMock(wraps=test_data.download_file)
 
         log_file = log_manager.get_next_log()
 
-        self.assertEqual(log_file, resume_data)
-        self.assertIsNone(log_manager.resume_log_file)
-        self.assertEqual(log_manager.current_log_file, resume_data)
-        self.assertIsNone(log_manager.last_log_file)
+        self.assertEqual(log_file, resume_file)
+        self.assertEqual(log_manager.current_log_file, resume_file)
 
     def test_resume_finished_log(self):
         """
         If the log manager has resume data indicating the first log file was fully processed
         Then the log manager fetches/unzips the next log file chronologically
         """
-        resume_data = test_data.get_ns_file1()
-        resume_data.processed = True
-        resume_data.last_processed_line = 4
-        with open(test_data.RESUME_PATH, 'wb') as file:
-            pickle.dump(resume_data, file)
+        resume_file = test_data.get_ns_file1()
+        resume_file.processed = True
+        resume_file.last_processed_line = 4
+        with open(test_data.RESUME_DATA_PATH, 'wb') as file:
+            pickle.dump({'cam': resume_file}, file)
 
         config = test_data.create_splunk_config()
         config.lds.log_download_dir = test_data.TEMP_DIR
@@ -344,39 +411,6 @@ class LogManagerTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(log_file.local_path_txt))
         self.assertFalse(os.path.isfile(log_file.local_path_gz))
 
-    def test_resume_unfinished_log_missing(self):
-        """
-        If the log manager has resume data indicating the first log file was partially processed
-        And the log file is missing
-        Then the log manager ignores it and fetches/unzips the next log file chronologically
-        """
-
-        resume_data = test_data.get_ns_file2()
-        resume_data.processed = False
-        resume_data.last_processed_line = 2
-
-        with open(test_data.RESUME_PATH, 'wb') as file:
-            pickle.dump(resume_data, file)
-
-        config = test_data.create_splunk_config()
-        config.lds.log_download_dir = test_data.TEMP_DIR
-        log_manager = LogManager(config)
-
-        log_manager._list = MagicMock(return_value = \
-            [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
-
-        log_file = log_manager.get_next_log()
-
-        expected_log_file = test_data.get_ns_file1()
-        expected_log_file.local_path_txt = \
-            os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz.replace('.gz', '.txt'))
-        expected_log_file.local_path_gz = os.path.join(test_data.TEMP_DIR, expected_log_file.filename_gz)
-
-        assert log_file is not None
-        self.assertEqual(log_file, expected_log_file)
-        self.assertTrue(os.path.isfile(expected_log_file.local_path_txt))
-        self.assertFalse(os.path.isfile(expected_log_file.local_path_gz))
 
 if __name__ == '__main__':
     unittest.main()

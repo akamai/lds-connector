@@ -99,17 +99,14 @@ class Connector:
             with open(log_file.local_path_txt, 'r', encoding='utf-8') as file:
                 self._process_log_lines(log_file, file)
 
-            os.remove(log_file.local_path_txt)
         except Exception as exception:
             logging.error('An unexpected error has occurred processing log file. Ignoring and moving on [%s]', exception)
         finally:
-            if log_file.last_processed_line != -1:
-                # Only update resume save file if some lines were processed
-                # If multiple log files fail (say Splunk is down), we want to resume at the first failing log file
-                self.log_manager.save_resume_data()
+            self.log_manager.update_last_log_files()
             self.event_handler.clear()
             logging.info('Processed log file %s. Finished processing: %s. Last line processed: %d', \
                 log_file.local_path_txt, log_file.processed, log_file.last_processed_line)
+            os.remove(log_file.local_path_txt)
 
     def _process_log_lines(self, log_file: LogFile, file):
         log_line = file.readline()
@@ -123,14 +120,13 @@ class Connector:
 
         while log_line:
             line_number += 1
-            try:
-                log_event = self._create_log_event(log_line)
-                self.event_handler.add_log_line(log_event)
-            except Exception as exception:
-                logging.error('Failed processing log line. Ignoring and moving on. [%s]', exception)
+
+            log_event = self._create_log_event(log_line)
+            if not log_event:
                 log_line = file.readline()
                 continue
-
+                
+            self.event_handler.add_log_line(log_event)
             if self.event_handler.publish_log_lines():
                 log_file.last_processed_line = line_number
 
@@ -141,14 +137,20 @@ class Connector:
             log_file.last_processed_line = line_number
         log_file.processed = True
 
-    def _create_log_event(self, log_line: str):
+    def _create_log_event(self, log_line: str) -> Optional[LogEvent]:
         if not log_line[-1] == '\n':
             logging.warning('Log line was missing new line. Adding it')
             log_line += '\n'
 
+        try:
+            timestamp = self._parse_timestamp(log_line)
+        except Exception:
+            logging.error('Failed parsing timestamp from log line. Ignoring line: %s', log_line)
+            return None
+
         return LogEvent(
             log_line=log_line,
-            timestamp=self._parse_timestamp(log_line)
+            timestamp=timestamp
         )
 
     def _parse_timestamp(self, log_line: str) -> datetime:

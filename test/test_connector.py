@@ -84,17 +84,17 @@ class ConnectorTest(unittest.TestCase):
         test_data.download_uncompress_file(log_file)
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
-        connector.log_manager.save_resume_data = MagicMock()
+        connector.log_manager.update_last_log_files = MagicMock()
         assert isinstance(connector.event_handler, Splunk)
         connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
         self.assertTrue(log_file.processed)
-        self.assertEqual(log_file.last_processed_line, 15)
+        self.assertEqual(log_file.last_processed_line, test_data.NS_FILE1_LINES)
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
-        connector.log_manager.save_resume_data.assert_called_once()
+        connector.log_manager.update_last_log_files.assert_called_once()
         connector.event_handler._post.assert_called()
 
     def test_splunk_multiple_logs(self):
@@ -110,22 +110,22 @@ class ConnectorTest(unittest.TestCase):
         test_data.download_uncompress_file(log_file2)
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file1, log_file2, None])
-        connector.log_manager.save_resume_data = MagicMock()
+        connector.log_manager.update_last_log_files = MagicMock()
         assert isinstance(connector.event_handler, Splunk)
         connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
         self.assertTrue(log_file1.processed)
-        self.assertEqual(log_file1.last_processed_line, 15)
+        self.assertEqual(log_file1.last_processed_line, test_data.NS_FILE1_LINES)
         self.assertFalse(os.path.isfile(log_file1.local_path_txt))
 
         self.assertTrue(log_file2.processed)
-        self.assertEqual(log_file2.last_processed_line, 15)
+        self.assertEqual(log_file2.last_processed_line, test_data.NS_FILE2_LINES)
         self.assertFalse(os.path.isfile(log_file2.local_path_txt))
 
-        connector.log_manager.save_resume_data.assert_called()
-        self.assertEqual(connector.log_manager.save_resume_data.call_count, 2)
+        connector.log_manager.update_last_log_files.assert_called()
+        self.assertEqual(connector.log_manager.update_last_log_files.call_count, 2)
         connector.event_handler._post.assert_called()
         self.assertEqual(connector.event_handler._post.call_count, 4)
 
@@ -156,17 +156,17 @@ class ConnectorTest(unittest.TestCase):
         test_data.download_uncompress_file(log_file)
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
-        connector.log_manager.save_resume_data = MagicMock()
+        connector.log_manager.update_last_log_files = MagicMock()
         assert isinstance(connector.event_handler, SysLog)
         connector.event_handler.syslogger = MagicMock()
 
         connector.process_log_files()
 
         self.assertTrue(log_file.processed)
-        self.assertEqual(log_file.last_processed_line, 15)
+        self.assertEqual(log_file.last_processed_line, test_data.NS_FILE1_LINES)
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
-        connector.log_manager.save_resume_data.assert_called_once()
+        connector.log_manager.update_last_log_files.assert_called_once()
         connector.event_handler.syslogger.info.assert_called()
 
     def test_syslog_records(self):
@@ -206,16 +206,20 @@ class ConnectorTest(unittest.TestCase):
         connector = Connector(config)
 
         connector.log_manager.get_next_log = MagicMock(return_value=None)
-        connector.log_manager.save_resume_data = MagicMock()
+        connector.log_manager.update_last_log_files = MagicMock()
         assert isinstance(connector.event_handler, Splunk)
         connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
-        connector.log_manager.save_resume_data.assert_not_called()
+        connector.log_manager.update_last_log_files.assert_not_called()
         connector.event_handler._post.assert_not_called()
 
-    def test_logs_server_error(self):
+    def test_event_handler_exception(self):
+        '''
+        An unexpected error occurs in the second invocation of event handler.
+        The log event batch size is 8.
+        '''
         config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
@@ -228,28 +232,31 @@ class ConnectorTest(unittest.TestCase):
         test_data.download_uncompress_file(log_file2)
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file1, log_file2, None])
-        connector.log_manager.save_resume_data = MagicMock()
+        connector.log_manager.update_last_log_files = MagicMock()
         assert isinstance(connector.event_handler, Splunk)
         connector.event_handler._post = MagicMock(
-            side_effect=itertools.chain([None, ConnectionError()], itertools.repeat(None)))
+            side_effect=itertools.chain([True, False], itertools.repeat(True)))
 
         connector.process_log_files()
 
-        self.assertFalse(log_file1.processed)
-        self.assertEqual(log_file1.last_processed_line, 8)
-        self.assertTrue(os.path.isfile(log_file1.local_path_txt))
+        self.assertTrue(log_file1.processed)
+        self.assertEqual(log_file1.last_processed_line, test_data.NS_FILE1_LINES)
+        self.assertFalse(os.path.isfile(log_file1.local_path_txt))
 
         self.assertTrue(log_file2.processed)
-        self.assertEqual(log_file2.last_processed_line, 15)
+        self.assertEqual(log_file2.last_processed_line, test_data.NS_FILE2_LINES)
         self.assertFalse(os.path.isfile(log_file2.local_path_txt))
 
-        connector.log_manager.save_resume_data.assert_called()
-        self.assertEqual(connector.log_manager.save_resume_data.call_count, 2)
+        connector.log_manager.update_last_log_files.assert_called()
+        self.assertEqual(connector.log_manager.update_last_log_files.call_count, 2)
 
         connector.event_handler._post.assert_called()
-        self.assertEqual(connector.event_handler._post.call_count, 4)
+        self.assertEqual(connector.event_handler._post.call_count, 5)
 
-    def test_logs_line_error(self):
+    def test_log_line_format_error(self):
+        '''
+        Line 7 of the log file is nonsense. Skip it
+        '''
         config = test_data.create_splunk_config()
         assert config.edgedns is not None
         config.edgedns.send_records = False
@@ -259,22 +266,21 @@ class ConnectorTest(unittest.TestCase):
         test_data.download_uncompress_file(log_file)
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
-        connector.log_manager.save_resume_data = MagicMock()
+        connector.log_manager.update_last_log_files = MagicMock()
         assert isinstance(connector.event_handler, Splunk)
         connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
         self.assertTrue(log_file.processed)
-        self.assertEqual(log_file.last_processed_line, 16)
+        self.assertEqual(log_file.last_processed_line, test_data.NS_FILE4_LINES)
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
-        connector.log_manager.save_resume_data.assert_called_once()
+        connector.log_manager.update_last_log_files.assert_called_once()
         connector.event_handler._post.assert_called()
 
     def test_logs_resume_from_line_number(self):
         lines_already_processed = 7
-        total_lines = 15
 
         config = test_data.create_splunk_config()
         assert config.edgedns is not None
@@ -286,17 +292,17 @@ class ConnectorTest(unittest.TestCase):
         test_data.download_uncompress_file(log_file)
 
         connector.log_manager.get_next_log = MagicMock(side_effect=[log_file, None])
-        connector.log_manager.save_resume_data = MagicMock()
+        connector.log_manager.update_last_log_files = MagicMock()
         assert isinstance(connector.event_handler, Splunk)
         connector.event_handler._post = MagicMock()
 
         connector.process_log_files()
 
         self.assertTrue(log_file.processed)
-        self.assertEqual(log_file.last_processed_line, total_lines)
+        self.assertEqual(log_file.last_processed_line, test_data.NS_FILE1_LINES)
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
-        connector.log_manager.save_resume_data.assert_called_once()
+        connector.log_manager.update_last_log_files.assert_called_once()
         connector.event_handler._post.assert_called()
         self.assertEqual(connector.event_handler._post.call_count, 1)
         

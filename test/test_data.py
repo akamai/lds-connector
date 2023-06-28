@@ -29,7 +29,7 @@ from lds_connector.log_file import LogEvent
 
 DATA_DIR = path.join(path.dirname(__file__), 'data')
 TEMP_DIR = path.join(path.dirname(__file__), 'tmp')
-RESUME_PATH = path.join(TEMP_DIR, LogManager._RESUME_PICKLE_FILE_NAME)
+RESUME_DATA_PATH = path.join(TEMP_DIR, LogManager._RESUME_DATA_PICKLE_FILE_NAME)
 
 NS_LIST_RESPONSE = """<?xml version="1.0" encoding="ISO-8859-1"?>
 <list>
@@ -139,6 +139,7 @@ def get_ns_file1():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE1_LINES = 15
 
 
 def get_ns_file2():
@@ -161,6 +162,7 @@ def get_ns_file2():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE2_LINES = 15
 
 
 def get_ns_file3():
@@ -183,6 +185,7 @@ def get_ns_file3():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE3_LINES = 15
 
 
 def get_ns_file4():
@@ -205,6 +208,29 @@ def get_ns_file4():
         processed=False,
         last_processed_line=-1
     )
+NS_FILE4_LINES = 16
+
+def get_ns_file5():
+    return LogFile(
+        ns_path_gz='/123456/cam/logs/yaac_123456.edns_U.202301030300-0400-0.gz',
+        filename_gz='yaac_123456.edns_U.202301030300-0400-0.gz',
+        size=1234,
+        md5='098f6bcd4621d373cade4e832627b4f6',
+        name_props= LogNameProps(
+            customer_id='yaac',
+            cp_code=123456,
+            format='edns',
+            sorted=False,
+            start_time=1672714800.0,
+            part=0,
+            encoding='gz'
+        ),
+        local_path_gz='',
+        local_path_txt='',
+        processed=False,
+        last_processed_line=-1
+    )
+NS_FILE5_LINES = 16
 
 
 DNS_RECORD1_JSON = '{"time_fetched_sec": 0, "zone": "edgedns.zone", "name": "edgedns.zone", "type": "CAA", ' \

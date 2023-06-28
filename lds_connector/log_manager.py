@@ -36,12 +36,13 @@ class LogManager:
     """
     Log manager responsible for fetching, preparing, and cleaning up log files
     """
-    _RESUME_PICKLE_FILE_NAME = 'resume.pickle'
+    _RESUME_DATA_PICKLE_FILE_NAME = 'resume_data.pickle'
+
 
     def __init__(self, config: Config):
         self.current_log_file: Optional[LogFile] = None
-        self.last_log_file: Optional[LogFile] = None
-        self.resume_log_file: Optional[LogFile] = None
+
+        self.last_log_files_by_zone: dict[str, LogFile] = {}
 
         self.config = config
 
@@ -52,13 +53,15 @@ class LogManager:
             ssl=self.config.lds.ns.use_ssl
         )
 
-        self.resume_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_PICKLE_FILE_NAME)
+        self.asc_log_files_cache: list[LogFile] = []
 
-        if os.path.isfile(self.resume_path):
-            with open(self.resume_path, 'rb') as file:
-                self.resume_log_file = pickle.load(file)
+        self.resume_data_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_DATA_PICKLE_FILE_NAME) 
 
-    def save_resume_data(self):
+        if os.path.isfile(self.resume_data_path):
+            with open(self.resume_data_path, 'rb') as file:
+                self.last_log_files_by_zone = pickle.load(file)
+
+    def update_last_log_files(self):
         """
         Save log file progress to disk
 
@@ -66,15 +69,17 @@ class LogManager:
         Returns: None
         """
         assert self.current_log_file is not None
+        
+        self.last_log_files_by_zone[self.current_log_file.name_props.customer_id] = self.current_log_file
 
         logging.debug('Saving resume data: %s', self.current_log_file)
 
         LogManager._ensure_dir_exists(self.config.lds.log_download_dir)
 
-        with open(self.resume_path, 'wb') as file:
-            pickle.dump(self.current_log_file, file)
+        with open(self.resume_data_path, 'wb') as file:
+            pickle.dump(self.last_log_files_by_zone, file)
 
-        logging.debug('Saved resume data: %s')
+        logging.debug('Saved resume data')
 
     def get_next_log(self) -> Optional[LogFile]:
         """
@@ -87,34 +92,9 @@ class LogManager:
         """
         logging.info('Getting next log file')
 
-        if self.resume_log_file is not None:
-            # First run. Resume log file found
-            if self.resume_log_file.processed:
-                # Resume log file was fully processed. Use it as last
-                logging.info('Found resume data. Last log file fully processed. Resuming processing after it.')
-                self.last_log_file = self.resume_log_file
-                self.current_log_file = None
-                self.resume_log_file = None
-            elif os.path.isfile(self.resume_log_file.local_path_txt):
-                # Resume log file wasn't fully processed. Use it as current
-                logging.info('Found resume data. Last log file wasn\'t fully processed. Resuming processing it.')
-                self.last_log_file = None
-                self.current_log_file = self.resume_log_file
-                self.resume_log_file = None
-                return self.current_log_file
-            else:
-                # Resume log file wasn't fully processed, but log file not found
-                # TODO: Consider attempting to re-download the missing file
-                logging.warning('Found resume data. Log file was missing. Ignoring resume data. [%s]', 
-                    self.resume_log_file.local_path_txt)
-                self.last_log_file = None
-                self.current_log_file = None
-                self.resume_log_file = None
-        elif self.current_log_file is not None:
+        if self.current_log_file is not None:
             # Normal run
-            self.save_resume_data()
-            self.last_log_file = self.current_log_file
-            self.current_log_file = None
+            self.update_last_log_files()
 
         next_log_file = self._determine_next_log()
         if not next_log_file:
@@ -143,37 +123,44 @@ class LogManager:
         """
         logging.debug('Determining next log file')
 
-        log_files = self._list()
+        # Log file list cache is empty. Refresh it.
+        if len(self.asc_log_files_cache) == 0:
+            log_files = self._list()
+            self.asc_log_files_cache = sorted(log_files, key=lambda f: (f.name_props.start_time, f.name_props.part))
 
-        if len(log_files) == 0:
+        # Log file list cache still empty after refresh. No available log files.
+        if len(self.asc_log_files_cache) == 0:
             logging.debug('No log files in NetStorage')
             return None
 
-        ascending_log_files = sorted(log_files, key=lambda f: (f.name_props.start_time, f.name_props.part))
+        next_log_file = None
+        while len(self.asc_log_files_cache) != 0:
+            log_file = self.asc_log_files_cache.pop(0)
 
-        # No previously processed log file. Pick first available
-        if self.last_log_file is None:
-            logging.debug('No previously processed log file. Selecting oldest')
-            logging.debug('Determined next log file: [%s]', ascending_log_files[0].filename_gz)
-            return ascending_log_files[0]
+            last_log_file_by_zone: LogFile = self.last_log_files_by_zone.get(log_file.name_props.customer_id)
 
-        logging.debug('Previously processed log file. Selecting oldest after this')
-        for log_file in ascending_log_files:
-            if log_file.name_props.start_time < self.last_log_file.name_props.start_time:
-                # Log file's start time is before last file's start time. Skip it
-                continue
-
-            if log_file.name_props.start_time == self.last_log_file.name_props.start_time \
-                and log_file.name_props.part <= self.last_log_file.name_props.part:
-                # Log file's start time is same as last file's start time.
-                # Log file's part is before last file's part. Skip it
-                continue
+            if last_log_file_by_zone:
+                if log_file.name_props == last_log_file_by_zone.name_props and not last_log_file_by_zone.processed:
+                    # Resume where we left off if we've previously attempted this log file before
+                    log_file = last_log_file_by_zone
+                elif log_file.name_props.start_time < last_log_file_by_zone.name_props.start_time:
+                    # Log file's start time is before last file's start time. Skip it
+                    continue
+                elif log_file.name_props.start_time == last_log_file_by_zone.name_props.start_time \
+                    and log_file.name_props.part <= last_log_file_by_zone.name_props.part:
+                    # Log file's start time is same as last file's start time.
+                    # Log file's part is before last file's part. Skip it
+                    continue
 
             logging.debug('Determined next log file: [%s]', log_file.filename_gz)
-            return log_file
+            next_log_file = log_file
+            break
 
-        logging.debug('No unprocessed log files in NetStorage')
-        return None
+        if next_log_file is None:
+            logging.debug('No unprocessed log files in NetStorage')
+
+        return next_log_file
+
 
     def _list(self) -> list[LogFile]:
         """

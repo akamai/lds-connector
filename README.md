@@ -1,6 +1,8 @@
 Akamai Log Delivery Service Connector 
 =====================================
 
+Version 2.1 - June 14, 2023
+
 Introduction
 ------------
 
@@ -12,6 +14,12 @@ or Akamai NetStorage.
 
 The LDS Connector is a script that monitors a NetStorage location for LDS logs, parses them into log events, and sends
 them to your data platform.
+
+The LDS Connector's **Log Delivery** feature monitors NetStorage for LDS logs, parses them into log events, and delivers
+them to your data platform.
+
+The LDS Connector's **Record Set Delivery** feature periodically fetches an Edge DNS record set using the Akamai APIs,
+parses them into log events, and delivers them to your data platform. This currently only suports a single zone.
 
 This document will show you
 1. How to configure Log Delivery Service to send your Akamai logs to NetStorage
@@ -44,11 +52,13 @@ Configuration
 
 The script is configured using a YAML file passed as a command line argument. 
 
-Use `config_template.yaml` as a template. It includes a comment describing each field.
+Use `config_template.yaml` as a template. It includes a comment describing each field. Optional fields can be 
+deleted if they're not needed. 
 
-The README files linked above contain more information on how these are set.
-See the [LDS Connector documentation](docs/lds_connector/README.md).
+The documents linked in the above Prerequisites section detail how to set each of these fields. They include 
+annotated screenshots. Please consult this documentation.
 
+See [here](docs/lds_connector/README.md) for further details on the `lds` fields.
 
 Installation
 ------------
@@ -100,11 +110,14 @@ Let's dig into how it works a bit.
 - The script is configured using a YAML file. This is passed as a command line argument. The script must be restarted
   to process any changes to the YAML file.
 - The script processes the log files chronologically. The log files are named using 
-  [a standard format](https://techdocs.akamai.com/log-delivery/docs/file-names) that contains the time range and a part
-  number. The script fetches the listing of available log files and sorts them by the start time. 
-- The script is able to resume processing where it left off. The script saves the current/last log file's metadata to 
-  disk. When the script is first run, it checks the saved metadata and resumes where it left off.
+  [a standard format](https://techdocs.akamai.com/log-delivery/docs/file-names) that contains the time range, 
+  an ID (typically Edge DNS zone), and a part number. The script fetches the listing of available log files and sorts them by the start time. 
 - The script can deliver logs to either Splunk or Wazuh. 
+- The script keeps track of the last processed log file and line for each ID (zone). This metadata is written to disk 
+  such that the script can resume where it left off if restarted.
+
+If the script fails to parse a log line, it logs an error and skips it.
+If the script fails to publish a log event to Splunk, it retries until successful.
 
 This script can optionally deliver Edge DNS records for a given zone.
 - The user enables Edge DNS record sending for a given zone in the YAML config
