@@ -17,16 +17,14 @@
 
 import json
 import logging
-import socket
-from logging.handlers import SysLogHandler
-from typing import Dict
 from datetime import datetime, timezone
 
-from .config import Config
+from .config import Config, SYSLOG_PROTOCOL_TCP, SYSLOG_PROTOCOL_UDP, SYSLOG_PROTOCOL_TCP_TLS
 from .dns_record import DnsRecord
 from .handler import Handler
 from .json import CustomJsonEncoder
 from .log_file import LogEvent
+from .syslogger import SysLogger
 
 
 class SysLog(Handler):
@@ -34,26 +32,35 @@ class SysLog(Handler):
     _ARG_LOG_TIME = 'log_time'
     _TIME_FORMAT = '%b %d %H:%M:%S'
 
+
     def __init__(self, config: Config):
         assert config.syslog is not None
 
-        self.config = config
+        self.config: Config = config
         self.log_queue: list[LogEvent] = []
         self.dns_queue: list[str] = []
 
-        self.syslogger = logging.getLogger('SysLogger')
-        self.syslogger.propagate = False
-        self.syslogger.setLevel(logging.INFO)
-        handler = SysLogHandler(
-            facility=SysLogHandler.LOG_USER,
+        protocol = None
+        if config.syslog.protocol == SYSLOG_PROTOCOL_UDP:
+            protocol = SysLogger.PROTOCOL_UDP
+        elif config.syslog.protocol == SYSLOG_PROTOCOL_TCP:
+            protocol = SysLogger.PROTOCOL_TCP
+        elif config.syslog.protocol == SYSLOG_PROTOCOL_TCP_TLS:
+            protocol = SysLogger.PROTOCOL_TCP_TLS
+        else:
+            assert False, 'Unexpected state. Syslog protocol was unknown: ' + config.syslog.protocol
+
+        self.syslogger = SysLogger(
+            protocol=protocol,
             address=(config.syslog.host, config.syslog.port),
-            socktype=socket.SOCK_STREAM if config.syslog.use_tcp else socket.SOCK_DGRAM
+            syslog_flavor=SysLogger.SYSLOG_RFC3164, # TODO Add config option
+            facility=SysLogger.FAC_USER,
+            from_host = config.syslog.from_host,
+            append_null=config.syslog.append_null,
+            tls_ca_file=None if config.syslog.tls is None else config.syslog.tls.ca_file,
+            tls_check_hostname = True if config.syslog.tls is None else config.syslog.tls.verify
         )
-        handler.append_nul = False
-        handler.setFormatter(logging.Formatter(
-            f'%({SysLog._ARG_LOG_TIME})s {socket.gethostname()} %({SysLog._ARG_APP_NAME})s: %(message)s'
-        ))
-        self.syslogger.addHandler(handler)
+
 
     def add_log_line(self, log_event: LogEvent) -> None:
         """
@@ -65,6 +72,7 @@ class SysLog(Handler):
         Returns: None
         """
         self.log_queue.append(log_event)
+
 
     def add_dns_record(self, dns_record: DnsRecord) -> None:
         """
@@ -95,15 +103,12 @@ class SysLog(Handler):
         logging.debug('Publishing log lines to SysLog server')
         assert self.config.syslog is not None
         for log_event in self.log_queue:
-            extra_args = {
-                SysLog._ARG_APP_NAME: self.config.syslog.lds_app_name,
-                SysLog._ARG_LOG_TIME: log_event.timestamp.strftime(SysLog._TIME_FORMAT)
-            }
-            self.syslogger.info(log_event.log_line, extra=extra_args)
+            self.syslogger.log_info(self.config.syslog.lds_app_name, log_event.timestamp, log_event.log_line)
 
         self.log_queue.clear()
         logging.debug('Published log lines to SysLog server')
         return True
+
 
     def publish_dns_records(self, force=False) -> bool:
         """
@@ -120,16 +125,14 @@ class SysLog(Handler):
 
         logging.debug('Publishing DNS records to SysLog server')
         assert self.config.syslog is not None
-        extra_args = {
-            SysLog._ARG_APP_NAME: self.config.syslog.edgedns_app_name,
-            SysLog._ARG_LOG_TIME: datetime.now(timezone.utc).strftime(SysLog._TIME_FORMAT)
-        }
+        assert self.config.syslog.edgedns_app_name is not None
         for dns_record in self.dns_queue:
-            self.syslogger.info(dns_record, extra=extra_args)
+            self.syslogger.log_info(self.config.syslog.edgedns_app_name, datetime.now(timezone.utc), dns_record)
 
         self.dns_queue.clear()
         logging.debug('Published DNS records to SysLog server')
         return True
+
 
     def clear(self):
         """
