@@ -138,10 +138,6 @@ class Connector:
         log_file.processed = True
 
     def _create_log_event(self, log_line: str) -> Optional[LogEvent]:
-        if not log_line[-1] == '\n':
-            logging.warning('Log line was missing new line. Adding it')
-            log_line += '\n'
-
         try:
             timestamp = self._parse_timestamp(log_line)
         except Exception:
