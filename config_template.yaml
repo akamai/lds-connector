@@ -18,9 +18,15 @@ splunk : # Optional. Splunk delivery config. Delete if using Wazuh/Syslog delive
 syslog : # SysLog delivery config. Delete if using Splunk delivery
   host : '127.0.0.1'                    # SysLog server host name / IP
   port: 513                             # SysLog server port
-  use_tcp : true                        # Whether to use TCP or UDP. 
-  lds_app_name : 'lds_dns_log'          # Program name for LDS log messages. Wazuh uses this to determine decoder
-  edgedns_app_name : 'lds_dns_record'   # Program name for Edge DNS records. Wazuh uses this to determine decoder
+  protocol: 'TCP'                       # SysLog protocol: UDP, TCP, or TCP_TLS
+  use_tcp : true                        # Deprecated. Use protocol. Whether to use TCP or UDP. 
+  lds_app_name : 'lds_dns_log'          # SysLog app name field for LDS messages
+  edgedns_app_name : 'lds_dns_record'   # SysLog app name field for Edge DNS config messages
+  append_null: true                     # Optional. Append 0x00 between SysLog message. Some servers require this
+  from_host: 'example.com'              # Optional. SysLog hostname field. If not set, use system's host name
+  tls :                                 # Optional. Required for TCP_TLS protocol
+    ca_file: 'ca.pem'                   # Certificate authority used to validate server's certificate
+    verify: true                        # Optional. Default true. Whether to verify server's hostname against certificate
 
 edgedns : # Optional. Record Set Delivery feature's config
   send_records : true       # Fetch + send zone_name's resource records. Open must be configured

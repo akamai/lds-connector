@@ -41,12 +41,21 @@ class SplunkConfig:
 
 
 @dataclass
+class SysLogTlsConfig:
+    ca_file: str
+    verify: bool
+
+
+@dataclass
 class SysLogConfig:
     host: str
     port: int
-    use_tcp: bool
+    protocol: str
+    tls: Optional[SysLogTlsConfig]
     lds_app_name: str
     edgedns_app_name: Optional[str]
+    append_null: bool
+    from_host: Optional[str]
 
 
 @dataclass
@@ -118,9 +127,19 @@ _KEY_SPLUNK_HEC_INDEX = 'index'
 _KEY_SYSLOG = 'syslog'
 _KEY_SYSLOG_HOST = 'host'
 _KEY_SYSLOG_PORT = 'port'
-_KEY_SYSLOG_USE_TCP = 'use_tcp'
+_KEY_SYSLOG_USE_TCP = 'use_tcp' # Deprecated
+_KEY_SYSLOG_PROTOCOL = 'protocol'
 _KEY_SYSLOG_LDS_APP_NAME = 'lds_app_name'
 _KEY_SYSLOG_EDGEDNS_APP_NAME = 'edgedns_app_name'
+_KEY_SYSLOG_APPEND_NULL = 'append_null'
+_KEY_SYSLOG_FROM_HOST = 'from_host'
+SYSLOG_PROTOCOL_UDP = 'UDP'
+SYSLOG_PROTOCOL_TCP = 'TCP'
+SYSLOG_PROTOCOL_TCP_TLS = 'TCP_TLS'
+
+_KEY_SYSLOG_TLS = 'tls'
+_KEY_SYSLOG_TLS_CA_FILE = 'ca_file'
+_KEY_SYSLOG_TLS_VERIFY = 'verify'
 
 _KEY_LDS = 'lds'
 _KEY_LDS_LOG_DIR = 'log_download_dir'
@@ -160,7 +179,28 @@ def is_config_valid(config: Config) -> bool:
             logging.error('Invalid config. DNS record sending enabled by SysLog app name not provided')
             return False
 
+    if config.syslog is not None:
+        if config.syslog.protocol not in {SYSLOG_PROTOCOL_UDP, SYSLOG_PROTOCOL_TCP, SYSLOG_PROTOCOL_TCP_TLS}:
+            logging.error('Invalid config. Syslog protocol is not supported: %s', config.syslog.protocol)
+            return False
+        if config.syslog.protocol == SYSLOG_PROTOCOL_TCP_TLS and config.syslog.tls is None:
+            logging.error('Invalid config. Protocol is TCP_TLS but TLS config is missing')
+            return False
+
     return True
+
+
+def _get_syslog_protocol(syslog_yaml) -> str:
+    protocol = syslog_yaml.get(_KEY_SYSLOG_PROTOCOL, None)
+
+    if protocol is None:
+        logging.warning('Config parameter "syslog.protocol" was not specified. Falling back to deprecated "syslog.use_tcp". The program will sill work as expected.')
+        if syslog_yaml[_KEY_SYSLOG_USE_TCP]:
+            protocol = SYSLOG_PROTOCOL_TCP
+        else:
+            protocol = SYSLOG_PROTOCOL_UDP
+
+    return protocol
 
 
 def read_yaml_config(yaml_stream) -> Optional[Config]:
@@ -251,12 +291,22 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
         syslog_yaml = yaml_config.get(_KEY_SYSLOG, None)
         syslog_config = None
         if syslog_yaml is not None:
+            syslog_tls_yaml = syslog_yaml.get(_KEY_SYSLOG_TLS, None)
+            syslog_tls_config = None
+            if syslog_tls_yaml is not None:
+                syslog_tls_config = SysLogTlsConfig(
+                    ca_file=syslog_tls_yaml.get(_KEY_SYSLOG_TLS_CA_FILE),
+                    verify=syslog_tls_yaml.get(_KEY_SYSLOG_TLS_VERIFY, True)
+                )
             syslog_config = SysLogConfig(
                 host=syslog_yaml[_KEY_SYSLOG_HOST],
                 port=syslog_yaml[_KEY_SYSLOG_PORT],
-                use_tcp=syslog_yaml[_KEY_SYSLOG_USE_TCP],
+                protocol=_get_syslog_protocol(syslog_yaml),
+                tls=syslog_tls_config,
                 lds_app_name=syslog_yaml[_KEY_SYSLOG_LDS_APP_NAME],
-                edgedns_app_name=syslog_yaml.get(_KEY_SYSLOG_EDGEDNS_APP_NAME, None)
+                edgedns_app_name=syslog_yaml.get(_KEY_SYSLOG_EDGEDNS_APP_NAME, None),
+                append_null=syslog_yaml.get(_KEY_SYSLOG_APPEND_NULL, True),
+                from_host=syslog_yaml.get(_KEY_SYSLOG_FROM_HOST, None)
             )
 
         config = Config(
@@ -275,3 +325,4 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
     except KeyError as key_error:
         logging.error('Configuration file missing key %s', key_error.args[0])
         return None
+

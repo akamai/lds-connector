@@ -54,6 +54,7 @@ DNS_LOG_EVENTS = [
     LogEvent(DNS_LOG_LINES[3], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[3]).astimezone(timezone.utc))
 ]
 
+CA_FILE = path.join(DATA_DIR, 'ca.pem')
 
 def create_splunk_config():
     return Config(
@@ -111,9 +112,12 @@ def create_syslog_config():
     config.syslog = SysLogConfig(
         host='192.168.0.1',
         port=514,
-        use_tcp=False,
+        protocol=SYSLOG_PROTOCOL_UDP,
+        tls=None,
         lds_app_name='test_lds_app_name',
-        edgedns_app_name='test_edgedns_app_name'
+        edgedns_app_name='test_edgedns_app_name',
+        append_null=True,
+        from_host=None
     )
 
     return config
