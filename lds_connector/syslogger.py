@@ -167,8 +167,6 @@ class SysLogger:
             else:
                 sock = self.ssl_context.wrap_socket(sock)
 
-            print(f'TLS version={sock.version()}, cipher={sock.cipher()}')
-
         self.socket = sock
 
 
