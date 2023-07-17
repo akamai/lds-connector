@@ -54,7 +54,7 @@ class SysLogConfig:
     tls: Optional[SysLogTlsConfig]
     lds_app_name: str
     edgedns_app_name: Optional[str]
-    message_delim: str
+    delimiter_method: str
     from_host: Optional[str]
 
 
@@ -131,18 +131,16 @@ _KEY_SYSLOG_USE_TCP = 'use_tcp' # Deprecated
 _KEY_SYSLOG_PROTOCOL = 'protocol'
 _KEY_SYSLOG_LDS_APP_NAME = 'lds_app_name'
 _KEY_SYSLOG_EDGEDNS_APP_NAME = 'edgedns_app_name'
-_KEY_SYSLOG_MESSAGE_DELIM = 'message_delim'
-_KEY_SYSLOG_APPEND_NULL = 'append_null'
+_KEY_SYSLOG_DELIM_METHOD = 'delimiter_method'
 _KEY_SYSLOG_FROM_HOST = 'from_host'
 SYSLOG_PROTOCOL_UDP = 'UDP'
 SYSLOG_PROTOCOL_TCP = 'TCP'
 SYSLOG_PROTOCOL_TCP_TLS = 'TCP_TLS'
-SYSLOG_DELIMS = {
-    'NONE': '',
-    'LF': '\n',
-    'CRLF': '\r\n',
-    'NULL': '\x00'
-}
+SYSLOG_DELIM_NONE = 'NONE'
+SYSLOG_DELIM_LF = 'LF'
+SYSLOG_DELIM_CRLF = 'CRLF'
+SYSLOG_DELIM_NULL = 'NULL'
+SYSLOG_DELIM_OCTET = 'OCTET'
 
 _KEY_SYSLOG_TLS = 'tls'
 _KEY_SYSLOG_TLS_CA_FILE = 'ca_file'
@@ -313,7 +311,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
                 tls=syslog_tls_config,
                 lds_app_name=syslog_yaml[_KEY_SYSLOG_LDS_APP_NAME],
                 edgedns_app_name=syslog_yaml.get(_KEY_SYSLOG_EDGEDNS_APP_NAME, None),
-                message_delim=SYSLOG_DELIMS[syslog_yaml.get(_KEY_SYSLOG_MESSAGE_DELIM, 'NULL')],
+                delimiter_method=syslog_yaml.get(_KEY_SYSLOG_DELIM_METHOD, SYSLOG_DELIM_LF),
                 from_host=syslog_yaml.get(_KEY_SYSLOG_FROM_HOST, None)
             )
 

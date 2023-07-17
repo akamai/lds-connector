@@ -54,6 +54,13 @@ class SysLogger:
     SYSLOG_RFC3164 = 0
     SYSLOG_RFC5424 = 1
 
+    # Delimiting methods
+    DELIM_NONE = 0
+    DELIM_LF = 1
+    DELIM_CRLF = 2
+    DELIM_NULL = 3
+    DELIM_OCTET = 4
+
     _SYSLOG_RFC3164_TIME_FORMAT = '%b %d %H:%M:%S'
     _SYSLOG_RFC5424_TIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -63,7 +70,7 @@ class SysLogger:
             address: tuple[str, int],
             syslog_flavor: int,
             facility: int,
-            delimiter: str,
+            delimiter_method: int,
             from_host: str | None = None,
             tls_ca_file: str | None = None,
             tls_check_hostname: bool = True
@@ -73,7 +80,7 @@ class SysLogger:
         self.syslog_flavor = syslog_flavor
         self.facility = facility
         self.from_address = from_host
-        self.delimiter = delimiter
+        self.delimiter_method = delimiter_method
         self.tls_check_hostname = tls_check_hostname
 
         self.socket = None
@@ -116,7 +123,15 @@ class SysLogger:
                 logging.error('Invalid syslog flavor: %s', self.syslog_flavor)
                 return
 
-            event += self.delimiter
+            if self.delimiter_method == SysLogger.DELIM_LF:
+                event += '\n'
+            elif self.delimiter_method == SysLogger.DELIM_CRLF:
+                event += '\r\n'
+            elif self.delimiter_method == SysLogger.DELIM_NULL:
+                event += '\x00'
+            elif self.delimiter_method == SysLogger.DELIM_OCTET:
+                event = f'{len(event)} {event}'
+
             event_bytes = event.encode('utf-8')
 
             self._send(event_bytes)
