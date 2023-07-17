@@ -138,6 +138,9 @@ class Connector:
         log_file.processed = True
 
     def _create_log_event(self, log_line: str) -> Optional[LogEvent]:
+        if not log_line[-1] == '\n':
+            log_line = log_line[:-1]
+
         try:
             timestamp = self._parse_timestamp(log_line)
         except Exception:

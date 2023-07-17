@@ -18,13 +18,13 @@
 import json
 import socket
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from test import test_data
 from unittest.mock import MagicMock, call, patch
 
 from freezegun import freeze_time
 
-from lds_connector.config import Config, SYSLOG_PROTOCOL_TCP, SYSLOG_PROTOCOL_TCP_TLS, SysLogTlsConfig
+from lds_connector.config import Config, SysLogTransport, SysLogTlsConfig, SysLogProtocol, SysLogDelimiter
 from lds_connector.json import CustomJsonEncoder
 from lds_connector.log_file import LogEvent
 from lds_connector.syslog import SysLog
@@ -33,11 +33,18 @@ from lds_connector.syslog import SysLog
 class SysLogTest(unittest.TestCase):
     LOG_EMIT_TIME = 1647651600.0
 
-    EXPECTED_TIMES = [
+    EXPECTED_TIMES_RFC3164 = [
         'Jan 03 03:06:39',
         'Jan 03 03:06:39',
         'Jan 03 03:06:39',
         'Jan 03 02:44:43'
+    ]
+
+    EXPECTED_TIMES_RFC5424 = [
+        '2023-01-03T03:06:39Z',
+        '2023-01-03T03:06:39Z',
+        '2023-01-03T03:06:39Z',
+        '2023-01-03T02:44:43Z'
     ]
 
 
@@ -51,13 +58,13 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
+        expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
         assert config.syslog is not None
         mock_socket_inst.sendto.assert_called_once_with(expected_message, (config.syslog.host, config.syslog.port))
 
 
     @patch('lds_connector.syslogger.socket.socket')
-    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME, tz=timezone.utc))
     def test_publish_udp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         mock_socket_inst = MagicMock()
@@ -68,7 +75,7 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.add_dns_record(dns_record)
         syslog_handler.publish_dns_records()
 
-        expected_message = SysLogTest.create_syslog_message_dns(config, dns_record)
+        expected_message = SysLogTest.create_rfc3164_dns(config, dns_record)
         assert config.syslog is not None
         mock_socket_inst.sendto.assert_called_once_with(expected_message, (config.syslog.host, config.syslog.port))
 
@@ -78,7 +85,7 @@ class SysLogTest(unittest.TestCase):
     def test_publish_tcp_log(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.protocol = SYSLOG_PROTOCOL_TCP
+        config.syslog.transport = SysLogTransport.TCP
         mock_socket_inst = MagicMock()
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
@@ -86,7 +93,48 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
+        expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
+        mock_socket_inst.connect.assert_called_once()
+        mock_socket_inst.sendall.assert_called_once_with(expected_message)
+
+
+    @patch('lds_connector.syslogger.socket.socket')
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    def test_publish_tcp_log_delims(self, mock_socket: MagicMock):
+
+        for delim in SysLogDelimiter:
+            config = test_data.create_syslog_config()
+            assert config.syslog is not None
+            config.syslog.transport = SysLogTransport.TCP
+            config.syslog.delimiter_method = delim
+            mock_socket_inst = MagicMock()
+            mock_socket.return_value = mock_socket_inst
+            syslog_handler = SysLog(config)
+
+            syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+            syslog_handler.publish_log_lines()
+
+            expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0], delim)
+            mock_socket_inst.connect.assert_called_once()
+            mock_socket_inst.sendall.assert_called_once_with(expected_message)
+
+
+
+    @patch('lds_connector.syslogger.socket.socket')
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    def test_publish_tcp_log_rfc5424(self, mock_socket: MagicMock):
+        config = test_data.create_syslog_config()
+        assert config.syslog is not None
+        config.syslog.transport = SysLogTransport.TCP
+        config.syslog.protocol = SysLogProtocol.RFC5424
+        mock_socket_inst = MagicMock()
+        mock_socket.return_value = mock_socket_inst
+        syslog_handler = SysLog(config)
+
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        syslog_handler.publish_log_lines()
+
+        expected_message = SysLogTest.create_rfc5424_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC5424[0])
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
 
@@ -97,7 +145,7 @@ class SysLogTest(unittest.TestCase):
     def test_publish_tls_log(self, mock_socket: MagicMock, mock_wrap_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.protocol = SYSLOG_PROTOCOL_TCP_TLS
+        config.syslog.transport = SysLogTransport.TCP_TLS
         config.syslog.tls = SysLogTlsConfig(
             ca_file=test_data.CA_FILE,
             verify=False
@@ -110,7 +158,7 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
+        expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
         mock_wrap_socket.assert_called_once()
@@ -122,7 +170,7 @@ class SysLogTest(unittest.TestCase):
     def test_publish_tls_log_verify(self, mock_socket: MagicMock, mock_wrap_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.protocol = SYSLOG_PROTOCOL_TCP_TLS
+        config.syslog.transport = SysLogTransport.TCP_TLS
         config.syslog.tls = SysLogTlsConfig(
             ca_file=test_data.CA_FILE,
             verify=True
@@ -135,18 +183,18 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
+        expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
         mock_wrap_socket.assert_called_once()
 
 
     @patch('lds_connector.syslogger.socket.socket')
-    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME, tz=timezone.utc))
     def test_publish_tcp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.protocol = SYSLOG_PROTOCOL_TCP
+        config.syslog.transport = SysLogTransport.TCP
         mock_socket_inst = MagicMock()
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
@@ -155,7 +203,7 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.add_dns_record(dns_record)
         syslog_handler.publish_dns_records()
 
-        expected_message = SysLogTest.create_syslog_message_dns(config, dns_record)
+        expected_message = SysLogTest.create_rfc3164_dns(config, dns_record)
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
 
@@ -195,9 +243,9 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.publish_log_lines()
 
         assert config.syslog is not None
-        expected_message1 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
-        expected_message2 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[1], SysLogTest.EXPECTED_TIMES[1])
-        expected_message3 = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[2], SysLogTest.EXPECTED_TIMES[2])
+        expected_message1 = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
+        expected_message2 = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[1], SysLogTest.EXPECTED_TIMES_RFC3164[1])
+        expected_message3 = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[2], SysLogTest.EXPECTED_TIMES_RFC3164[2])
         self.assertEqual(mock_socket_inst.sendto.call_count, 3)
         mock_socket_inst.sendto.assert_has_calls([
             call(expected_message1, (config.syslog.host, config.syslog.port)),
@@ -207,7 +255,7 @@ class SysLogTest(unittest.TestCase):
 
 
     @patch('lds_connector.syslogger.socket.socket')
-    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME, tz=timezone.utc))
     def test_publish_multiple_dns_records(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
 
@@ -221,9 +269,9 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.publish_dns_records()
 
         assert config.syslog is not None
-        expected_message1 = SysLogTest.create_syslog_message_dns(config, test_data.create_dns_record1())
-        expected_message2 = SysLogTest.create_syslog_message_dns(config, test_data.create_dns_record2())
-        expected_message3 = SysLogTest.create_syslog_message_dns(config, test_data.create_dns_record3())
+        expected_message1 = SysLogTest.create_rfc3164_dns(config, test_data.create_dns_record1())
+        expected_message2 = SysLogTest.create_rfc3164_dns(config, test_data.create_dns_record2())
+        expected_message3 = SysLogTest.create_rfc3164_dns(config, test_data.create_dns_record3())
         self.assertEqual(mock_socket_inst.sendto.call_count, 3)
         mock_socket_inst.sendto.assert_has_calls([
             call(expected_message1, (config.syslog.host, config.syslog.port)),
@@ -246,17 +294,36 @@ class SysLogTest(unittest.TestCase):
 
 
     @staticmethod
-    def create_syslog_message_dns(config: Config, json_object):
+    def create_rfc3164_dns(config: Config, json_object):
         json_message = json.dumps(json_object, cls=CustomJsonEncoder)
         assert config.syslog is not None
-        return f'<14>Mar 18 18:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}\x00'.encode('utf-8')
+        return f'<14>Mar 19 01:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}\n'.encode('utf-8')
 
 
     @staticmethod
-    def create_syslog_message_log(config: Config, log_event: LogEvent, timestamp: str):
+    def create_rfc3164_log(config: Config, log_event: LogEvent, timestamp: str, delim = SysLogDelimiter.LF):
         assert config.syslog is not None
-        return f'<14>{timestamp} {socket.gethostname()} {config.syslog.lds_app_name}: {log_event.log_line}\x00'.encode('utf-8')
+        message = f'<14>{timestamp} {socket.gethostname()} {config.syslog.lds_app_name}: {log_event.log_line}'
 
+        if delim == SysLogDelimiter.LF:
+            message += '\n'
+        elif delim == SysLogDelimiter.NULL:
+            message += str('\x00')
+        elif delim == SysLogDelimiter.CRLF:
+            message += '\r\n'
+        elif delim == SysLogDelimiter.NONE:
+            pass
+        elif delim == SysLogDelimiter.OCTET:
+            message = str(len(message))+ ' ' + message
+
+        return message.encode('utf-8')
+    
+
+    @staticmethod
+    def create_rfc5424_log(config: Config, log_event: LogEvent, timestamp: str):
+        assert config.syslog is not None
+        return f'<14>1 {timestamp} {socket.gethostname()} {config.syslog.lds_app_name} - - - {log_event.log_line}\n'.encode('utf-8')
+    
 
 if __name__ == '__main__':
     unittest.main()

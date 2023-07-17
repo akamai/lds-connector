@@ -46,39 +46,47 @@ class SysLogger:
     FAC_SOLCRON   = 15      #  Scheduling daemon (Solaris)
 
     # Transport types
-    PROTOCOL_UDP       = 0
-    PROTOCOL_TCP       = 1
-    PROTOCOL_TCP_TLS   = 2
+    TRANSPORT_UDP       = 0
+    TRANSPORT_TCP       = 1
+    TRANSPORT_TCP_TLS   = 2
 
     # Syslog formats
-    SYSLOG_RFC3164 = 0
-    # SYSLOG_RFC5424 = 1
+    PROTOCOL_RFC3164 = 0
+    PROTOCOL_RFC5424 = 1
+
+    # Delimiting methods
+    DELIM_NONE = 0
+    DELIM_LF = 1
+    DELIM_CRLF = 2
+    DELIM_NULL = 3
+    DELIM_OCTET = 4
 
     _SYSLOG_RFC3164_TIME_FORMAT = '%b %d %H:%M:%S'
+    _SYSLOG_RFC5424_TIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
     def __init__(
             self,
-            protocol: int,
+            transport: int,
             address: tuple[str, int],
-            syslog_flavor: int,
+            protocol: int,
             facility: int,
-            delimiter: str,
+            delimiter_method: int,
             from_host: str | None = None,
             tls_ca_file: str | None = None,
             tls_check_hostname: bool = True
     ):
-        self.protocol = protocol
+        self.transport = transport
         self.address = address
-        self.syslog_flavor = syslog_flavor
+        self.protocol = protocol
         self.facility = facility
         self.from_address = from_host
-        self.delimiter = delimiter
+        self.delimiter_method = delimiter_method
         self.tls_check_hostname = tls_check_hostname
 
         self.socket = None
 
         self.ssl_context = None
-        if self.protocol == SysLogger.PROTOCOL_TCP_TLS:
+        if self.transport == SysLogger.TRANSPORT_TCP_TLS:
             self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             self.ssl_context.load_verify_locations(tls_ca_file)
             self.ssl_context.verify_mode = ssl.CERT_REQUIRED
@@ -87,7 +95,7 @@ class SysLogger:
 
     def __del__(self):
         if self.socket is not None:
-            if self.protocol == SysLogger.PROTOCOL_TCP_TLS:
+            if self.transport == SysLogger.TRANSPORT_TCP_TLS:
                 self.socket.shutdown(socket.SHUT_RDWR)
             self.socket.close()
 
@@ -106,8 +114,24 @@ class SysLogger:
                 message = message
             )
 
-            event = self._format_rfc3164(record)
-            event += self.delimiter
+            event = None
+            if self.protocol == SysLogger.PROTOCOL_RFC3164:
+                event = self._format_rfc3164(record)
+            elif self.protocol == SysLogger.PROTOCOL_RFC5424:
+                event = self._format_rfc5424(record)
+            else:
+                logging.error('Invalid syslog flavor: %s', self.protocol)
+                return
+
+            if self.delimiter_method == SysLogger.DELIM_LF:
+                event += '\n'
+            elif self.delimiter_method == SysLogger.DELIM_CRLF:
+                event += '\r\n'
+            elif self.delimiter_method == SysLogger.DELIM_NULL:
+                event += '\x00'
+            elif self.delimiter_method == SysLogger.DELIM_OCTET:
+                event = f'{len(event)} {event}'
+
             event_bytes = event.encode('utf-8')
 
             self._send(event_bytes)
@@ -121,17 +145,17 @@ class SysLogger:
             self._create_socket()
 
         assert self.socket is not None, 'Unexpected state. Socket was not created'
-        if self.protocol == SysLogger.PROTOCOL_UDP:
+        if self.transport == SysLogger.TRANSPORT_UDP:
             self.socket.sendto(event, self.address)
-        elif self.protocol == SysLogger.PROTOCOL_TCP or SysLogger.PROTOCOL_TCP_TLS:
+        elif self.transport == SysLogger.TRANSPORT_TCP or SysLogger.TRANSPORT_TCP_TLS:
             self.socket.sendall(event)
 
 
     def _create_socket(self):
         socktype = socket.SOCK_DGRAM
-        if self.protocol == SysLogger.PROTOCOL_UDP:
+        if self.transport == SysLogger.TRANSPORT_UDP:
             socktype = socket.SOCK_DGRAM
-        elif self.protocol == SysLogger.PROTOCOL_TCP or self.protocol == SysLogger.PROTOCOL_TCP_TLS:
+        elif self.transport == SysLogger.TRANSPORT_TCP or self.transport == SysLogger.TRANSPORT_TCP_TLS:
             socktype = socket.SOCK_STREAM
 
         host, port = self.address
@@ -159,7 +183,7 @@ class SysLogger:
             raise err
         assert sock is not None, 'Unexpected state. Socket was not created'
 
-        if self.protocol == SysLogger.PROTOCOL_TCP_TLS:
+        if self.transport == SysLogger.TRANSPORT_TCP_TLS:
             assert self.ssl_context is not None, 'Unexpected state. SSL context was not created'
             if self.tls_check_hostname:
                 sock = self.ssl_context.wrap_socket(sock, server_hostname=host)
@@ -173,6 +197,12 @@ class SysLogger:
         pri_str = self._encode_prio(record.severity)
         timestamp_str = record.time.strftime(SysLogger._SYSLOG_RFC3164_TIME_FORMAT)
         return f'<{pri_str}>{timestamp_str} {record.hostname} {record.app_name}: {record.message}'
+    
+
+    def _format_rfc5424(self, record: SysLogRecord) -> str:
+        pri_str = self._encode_prio(record.severity)
+        timestamp_str = record.time.strftime(SysLogger._SYSLOG_RFC5424_TIME_FORMAT)
+        return f'<{pri_str}>1 {timestamp_str} {record.hostname} {record.app_name} - - - {record.message}'
 
 
     def _encode_prio(self, severity: int) -> int:

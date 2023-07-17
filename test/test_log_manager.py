@@ -41,10 +41,12 @@ class LogManagerTest(unittest.TestCase):
         if path.isdir(test_data.TEMP_DIR):
             shutil.rmtree(test_data.TEMP_DIR)
 
+    @staticmethod
     def set_last_processed(log_manager: LogManager, log_file: LogFile):
         log_file.processed = True
         log_manager.last_log_files_by_zone = {'cam': log_file}
 
+    @staticmethod
     def set_log_file_paths(log_file: LogFile):
         log_file.local_path_txt = \
             os.path.join(test_data.TEMP_DIR, log_file.filename_gz.replace('.gz', '.txt'))
