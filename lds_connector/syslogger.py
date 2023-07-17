@@ -52,9 +52,10 @@ class SysLogger:
 
     # Syslog formats
     SYSLOG_RFC3164 = 0
-    # SYSLOG_RFC5424 = 1
+    SYSLOG_RFC5424 = 1
 
     _SYSLOG_RFC3164_TIME_FORMAT = '%b %d %H:%M:%S'
+    _SYSLOG_RFC5424_TIME_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
     def __init__(
             self,
@@ -106,7 +107,15 @@ class SysLogger:
                 message = message
             )
 
-            event = self._format_rfc3164(record)
+            event = None
+            if self.syslog_flavor == SysLogger.SYSLOG_RFC3164:
+                event = self._format_rfc3164(record)
+            elif self.syslog_flavor == SysLogger.SYSLOG_RFC5424:
+                event = self._format_rfc5424(record)
+            else:
+                logging.error('Invalid syslog flavor: %s', self.syslog_flavor)
+                return
+
             event += self.delimiter
             event_bytes = event.encode('utf-8')
 
@@ -173,6 +182,12 @@ class SysLogger:
         pri_str = self._encode_prio(record.severity)
         timestamp_str = record.time.strftime(SysLogger._SYSLOG_RFC3164_TIME_FORMAT)
         return f'<{pri_str}>{timestamp_str} {record.hostname} {record.app_name}: {record.message}'
+    
+
+    def _format_rfc5424(self, record: SysLogRecord) -> str:
+        pri_str = self._encode_prio(record.severity)
+        timestamp_str = record.time.strftime(SysLogger._SYSLOG_RFC5424_TIME_FORMAT)
+        return f'<{pri_str}>1 {timestamp_str} {record.hostname} {record.app_name} - - - {record.message}'
 
 
     def _encode_prio(self, severity: int) -> int:
