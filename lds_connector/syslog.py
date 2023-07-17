@@ -55,8 +55,8 @@ class SysLog(Handler):
             address=(config.syslog.host, config.syslog.port),
             syslog_flavor=SysLogger.SYSLOG_RFC3164, # TODO Add config option
             facility=SysLogger.FAC_USER,
+            delimiter=config.syslog.message_delim,
             from_host = config.syslog.from_host,
-            append_null=config.syslog.append_null,
             tls_ca_file=None if config.syslog.tls is None else config.syslog.tls.ca_file,
             tls_check_hostname = True if config.syslog.tls is None else config.syslog.tls.verify
         )

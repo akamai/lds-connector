@@ -116,7 +116,7 @@ def create_syslog_config():
         tls=None,
         lds_app_name='test_lds_app_name',
         edgedns_app_name='test_edgedns_app_name',
-        append_null=True,
+        message_delim='\x00',
         from_host=None
     )
 
