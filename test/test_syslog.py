@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, call, patch
 
 from freezegun import freeze_time
 
-from lds_connector.config import Config
+from lds_connector.config import Config, SYSLOG_PROTOCOL_TCP, SYSLOG_PROTOCOL_TCP_TLS, SysLogTlsConfig
 from lds_connector.json import CustomJsonEncoder
 from lds_connector.log_file import LogEvent
 from lds_connector.syslog import SysLog
@@ -40,7 +40,8 @@ class SysLogTest(unittest.TestCase):
         'Jan 03 02:44:43'
     ]
 
-    @patch('lds_connector.syslog.logging.handlers.socket.socket')
+
+    @patch('lds_connector.syslogger.socket.socket')
     def test_publish_udp_log(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         mock_socket_inst = MagicMock()
@@ -54,7 +55,8 @@ class SysLogTest(unittest.TestCase):
         assert config.syslog is not None
         mock_socket_inst.sendto.assert_called_once_with(expected_message, (config.syslog.host, config.syslog.port))
 
-    @patch('lds_connector.syslog.logging.handlers.socket.socket')
+
+    @patch('lds_connector.syslogger.socket.socket')
     @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
     def test_publish_udp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
@@ -70,12 +72,13 @@ class SysLogTest(unittest.TestCase):
         assert config.syslog is not None
         mock_socket_inst.sendto.assert_called_once_with(expected_message, (config.syslog.host, config.syslog.port))
 
-    @patch('lds_connector.syslog.logging.handlers.socket.socket')
+
+    @patch('lds_connector.syslogger.socket.socket')
     @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
     def test_publish_tcp_log(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.use_tcp = True
+        config.syslog.protocol = SYSLOG_PROTOCOL_TCP
         mock_socket_inst = MagicMock()
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
@@ -87,12 +90,63 @@ class SysLogTest(unittest.TestCase):
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
 
-    @patch('lds_connector.syslog.logging.handlers.socket.socket')
+
+    @patch('lds_connector.syslogger.ssl.SSLContext.wrap_socket')
+    @patch('lds_connector.syslogger.socket.socket')
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    def test_publish_tls_log(self, mock_socket: MagicMock, mock_wrap_socket: MagicMock):
+        config = test_data.create_syslog_config()
+        assert config.syslog is not None
+        config.syslog.protocol = SYSLOG_PROTOCOL_TCP_TLS
+        config.syslog.tls = SysLogTlsConfig(
+            ca_file=test_data.CA_FILE,
+            verify=False
+        )
+        mock_socket_inst = MagicMock()
+        mock_socket.return_value = mock_socket_inst
+        mock_wrap_socket.side_effect = lambda socket: socket
+        syslog_handler = SysLog(config)
+
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        syslog_handler.publish_log_lines()
+
+        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
+        mock_socket_inst.connect.assert_called_once()
+        mock_socket_inst.sendall.assert_called_once_with(expected_message)
+        mock_wrap_socket.assert_called_once()
+
+
+    @patch('lds_connector.syslogger.ssl.SSLContext.wrap_socket')
+    @patch('lds_connector.syslogger.socket.socket')
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    def test_publish_tls_log_verify(self, mock_socket: MagicMock, mock_wrap_socket: MagicMock):
+        config = test_data.create_syslog_config()
+        assert config.syslog is not None
+        config.syslog.protocol = SYSLOG_PROTOCOL_TCP_TLS
+        config.syslog.tls = SysLogTlsConfig(
+            ca_file=test_data.CA_FILE,
+            verify=True
+        )
+        mock_socket_inst = MagicMock()
+        mock_socket.return_value = mock_socket_inst
+        mock_wrap_socket.side_effect = lambda socket, server_hostname: socket
+        syslog_handler = SysLog(config)
+
+        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        syslog_handler.publish_log_lines()
+
+        expected_message = SysLogTest.create_syslog_message_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES[0])
+        mock_socket_inst.connect.assert_called_once()
+        mock_socket_inst.sendall.assert_called_once_with(expected_message)
+        mock_wrap_socket.assert_called_once()
+
+
+    @patch('lds_connector.syslogger.socket.socket')
     @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
     def test_publish_tcp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.use_tcp = True
+        config.syslog.protocol = SYSLOG_PROTOCOL_TCP
         mock_socket_inst = MagicMock()
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
@@ -105,6 +159,7 @@ class SysLogTest(unittest.TestCase):
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
 
+
     def test_publish_logs_no_events(self):
         config = test_data.create_syslog_config()
         syslog_handler = SysLog(config)
@@ -112,7 +167,8 @@ class SysLogTest(unittest.TestCase):
 
         syslog_handler.publish_log_lines()
 
-        syslog_handler.syslogger.info.assert_not_called()
+        syslog_handler.syslogger.log_info.assert_not_called()
+
 
     def test_publish_dns_records_no_events(self):
         config = test_data.create_syslog_config()
@@ -121,9 +177,10 @@ class SysLogTest(unittest.TestCase):
 
         syslog_handler.publish_dns_records()
 
-        syslog_handler.syslogger.info.assert_not_called()
+        syslog_handler.syslogger.log_info.assert_not_called()
 
-    @patch('lds_connector.syslog.logging.handlers.socket.socket')
+
+    @patch('lds_connector.syslogger.socket.socket')
     @patch('time.time', MagicMock(return_value=LOG_EMIT_TIME))
     def test_publish_multiple_logs(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
@@ -148,7 +205,8 @@ class SysLogTest(unittest.TestCase):
             call(expected_message3, (config.syslog.host, config.syslog.port))
         ])
 
-    @patch('lds_connector.syslog.logging.handlers.socket.socket')
+
+    @patch('lds_connector.syslogger.socket.socket')
     @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
     def test_publish_multiple_dns_records(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
@@ -173,6 +231,7 @@ class SysLogTest(unittest.TestCase):
             call(expected_message3, (config.syslog.host, config.syslog.port))
         ])
 
+
     def test_clear_logs(self):
         config = test_data.create_syslog_config()
         syslog_handler = SysLog(config)
@@ -183,18 +242,20 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.clear()
         syslog_handler.publish_log_lines()
 
-        syslog_handler.syslogger.info.assert_not_called()
+        syslog_handler.syslogger.log_info.assert_not_called()
+
 
     @staticmethod
     def create_syslog_message_dns(config: Config, json_object):
         json_message = json.dumps(json_object, cls=CustomJsonEncoder)
         assert config.syslog is not None
-        return f'<14>Mar 18 18:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}'.encode('utf-8')
+        return f'<14>Mar 18 18:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}\x00'.encode('utf-8')
+
 
     @staticmethod
     def create_syslog_message_log(config: Config, log_event: LogEvent, timestamp: str):
         assert config.syslog is not None
-        return f'<14>{timestamp} {socket.gethostname()} {config.syslog.lds_app_name}: {log_event.log_line}'.encode('utf-8')
+        return f'<14>{timestamp} {socket.gethostname()} {config.syslog.lds_app_name}: {log_event.log_line}\x00'.encode('utf-8')
 
 
 if __name__ == '__main__':

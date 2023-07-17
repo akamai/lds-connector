@@ -58,22 +58,20 @@ class SysLogger:
 
     def __init__(
             self,
-            app_name: str,
             protocol: int,
             address: tuple[str, int],
             syslog_flavor: int,
             facility: int,
-            from_address: str | None = None,
+            from_host: str | None = None,
             append_null: bool = True,
             tls_ca_file: str | None = None,
             tls_check_hostname: bool = True
     ):
-        self.app_name = app_name
         self.protocol = protocol
         self.address = address
         self.syslog_flavor = syslog_flavor
         self.facility = facility
-        self.from_address = from_address
+        self.from_address = from_host
         self.append_null = append_null
         self.tls_check_hostname = tls_check_hostname
 
@@ -87,21 +85,21 @@ class SysLogger:
             self.ssl_context.check_hostname = tls_check_hostname
 
 
-    def destroy(self):
+    def __del__(self):
         if self.socket is not None:
             if self.protocol == SysLogger.PROTOCOL_TCP_TLS:
                 self.socket.shutdown(socket.SHUT_RDWR)
             self.socket.close()
 
 
-    def log_info(self, time: datetime, message: str):
+    def log_info(self, app_name: str, time: datetime, message: str):
         try:
             record = SysLogRecord(
                 severity = SysLogger.SEV_INFO,
                 facility = self.facility,
                 time = time,
                 hostname = self.from_address if self.from_address else socket.gethostname(),
-                app_name = self.app_name,
+                app_name = app_name,
                 process_id = None,
                 message_id = None,
                 structured_data = None,
@@ -177,7 +175,7 @@ class SysLogger:
     def _format_rfc3164(self, record: SysLogRecord) -> str:
         pri_str = self._encode_prio(record.severity)
         timestamp_str = record.time.strftime(SysLogger._SYSLOG_RFC3164_TIME_FORMAT)
-        return f'<{pri_str}>{timestamp_str} {record.hostname} {record.app_name}:{record.message}'
+        return f'<{pri_str}>{timestamp_str} {record.hostname} {record.app_name}: {record.message}'
 
 
     def _encode_prio(self, severity: int) -> int:

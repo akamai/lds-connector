@@ -167,7 +167,7 @@ class ConnectorTest(unittest.TestCase):
         self.assertFalse(os.path.isfile(log_file.local_path_txt))
 
         connector.log_manager.update_last_log_files.assert_called_once()
-        connector.event_handler.syslogger.info.assert_called()
+        connector.event_handler.syslogger.log_info.assert_called()
 
     def test_syslog_records(self):
         config = test_data.create_syslog_config()
@@ -182,7 +182,7 @@ class ConnectorTest(unittest.TestCase):
         connector.process_dns_records()
 
         self.assertTrue(connector.edgedns.get_records.assert_called_once)
-        self.assertEqual(connector.event_handler.syslogger.info.call_count, 2)
+        self.assertEqual(connector.event_handler.syslogger.log_info.call_count, 2)
 
     # Generic tests
 
