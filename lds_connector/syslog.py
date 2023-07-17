@@ -19,7 +19,7 @@ import json
 import logging
 from datetime import datetime, timezone
 
-from .config import Config, SYSLOG_PROTOCOL_TCP, SYSLOG_PROTOCOL_UDP, SYSLOG_PROTOCOL_TCP_TLS
+from .config import *
 from .dns_record import DnsRecord
 from .handler import Handler
 from .json import CustomJsonEncoder
@@ -50,12 +50,26 @@ class SysLog(Handler):
         else:
             assert False, 'Unexpected state. Syslog protocol was unknown: ' + config.syslog.protocol
 
+        delimiter_method = SysLogger.DELIM_NONE
+        if config.syslog.delimiter_method == SYSLOG_DELIM_NONE:
+            delimiter_method = SysLogger.DELIM_NONE
+        elif config.syslog.delimiter_method == SYSLOG_DELIM_LF:
+            delimiter_method = SysLogger.DELIM_LF
+        elif config.syslog.delimiter_method == SYSLOG_DELIM_CRLF:
+            delimiter_method = SysLogger.DELIM_CRLF
+        elif config.syslog.delimiter_method == SYSLOG_DELIM_NULL:
+            delimiter_method = SysLogger.DELIM_NULL
+        elif config.syslog.delimiter_method == SYSLOG_DELIM_OCTET:
+            delimiter_method = SysLogger.DELIM_OCTET
+        else:
+            assert False, 'Unexpected state. Syslog delimiter method was unknown: ' + config.syslog.delimiter_method
+
         self.syslogger = SysLogger(
             protocol=protocol,
             address=(config.syslog.host, config.syslog.port),
             syslog_flavor=SysLogger.SYSLOG_RFC3164, # TODO Add config option
             facility=SysLogger.FAC_USER,
-            delimiter=config.syslog.message_delim,
+            delimiter_method=delimiter_method,
             from_host = config.syslog.from_host,
             tls_ca_file=None if config.syslog.tls is None else config.syslog.tls.ca_file,
             tls_check_hostname = True if config.syslog.tls is None else config.syslog.tls.verify

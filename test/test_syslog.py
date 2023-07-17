@@ -249,13 +249,13 @@ class SysLogTest(unittest.TestCase):
     def create_syslog_message_dns(config: Config, json_object):
         json_message = json.dumps(json_object, cls=CustomJsonEncoder)
         assert config.syslog is not None
-        return f'<14>Mar 18 18:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}\x00'.encode('utf-8')
+        return f'<14>Mar 18 18:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}\n'.encode('utf-8')
 
 
     @staticmethod
     def create_syslog_message_log(config: Config, log_event: LogEvent, timestamp: str):
         assert config.syslog is not None
-        return f'<14>{timestamp} {socket.gethostname()} {config.syslog.lds_app_name}: {log_event.log_line}\x00'.encode('utf-8')
+        return f'<14>{timestamp} {socket.gethostname()} {config.syslog.lds_app_name}: {log_event.log_line}\n'.encode('utf-8')
 
 
 if __name__ == '__main__':
