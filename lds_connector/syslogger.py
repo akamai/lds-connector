@@ -62,8 +62,8 @@ class SysLogger:
             address: tuple[str, int],
             syslog_flavor: int,
             facility: int,
+            delimiter: str,
             from_host: str | None = None,
-            append_null: bool = True,
             tls_ca_file: str | None = None,
             tls_check_hostname: bool = True
     ):
@@ -72,7 +72,7 @@ class SysLogger:
         self.syslog_flavor = syslog_flavor
         self.facility = facility
         self.from_address = from_host
-        self.append_null = append_null
+        self.delimiter = delimiter
         self.tls_check_hostname = tls_check_hostname
 
         self.socket = None
@@ -107,8 +107,7 @@ class SysLogger:
             )
 
             event = self._format_rfc3164(record)
-            if self.append_null:
-                event += '\000'
+            event += self.delimiter
             event_bytes = event.encode('utf-8')
 
             self._send(event_bytes)

@@ -82,11 +82,13 @@ class ConfigTest(unittest.TestCase):
         expected_config.edgedns = None
         assert expected_config.syslog is not None
         expected_config.syslog.edgedns_app_name = None
+        expected_config.syslog.message_delim = '\x00'
 
         config_filename = path.join(test_data.DATA_DIR, 'test_config_syslog_no_records.yaml')
         with open(config_filename, 'r', encoding='utf-8') as config_file:
             config = read_yaml_config(config_file)
             self.assertEqual(config, expected_config)
+
 
     def test_read_yaml_syslog_records(self):
         expected_config = test_data.create_syslog_config()
