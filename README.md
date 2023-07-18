@@ -42,9 +42,10 @@ See the [Akamai documentation](docs/akamai/README.md) to configure NetStorage an
 
 If you want to deliver logs to Splunk, then see the [Splunk documentation](docs/splunk/README.md).
 
+If you want to deliver logs via SysLog, then see the [SysLog documentation](docs/syslog/README.md).
+
 If you want to deliver logs to Wazuh, then see the [Wazuh documentation](docs/wazuh/README.md).
 
-If you want to deliver logs via SysLog, then see the [SysLog documentation](docs/syslog/README.md).
 
 
 Configuration
