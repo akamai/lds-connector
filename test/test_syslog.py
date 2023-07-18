@@ -18,7 +18,7 @@
 import json
 import socket
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 from test import test_data
 from unittest.mock import MagicMock, call, patch
 
@@ -64,7 +64,7 @@ class SysLogTest(unittest.TestCase):
 
 
     @patch('lds_connector.syslogger.socket.socket')
-    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME, tz=timezone.utc))
     def test_publish_udp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         mock_socket_inst = MagicMock()
@@ -190,7 +190,7 @@ class SysLogTest(unittest.TestCase):
 
 
     @patch('lds_connector.syslogger.socket.socket')
-    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME, tz=timezone.utc))
     def test_publish_tcp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
@@ -255,7 +255,7 @@ class SysLogTest(unittest.TestCase):
 
 
     @patch('lds_connector.syslogger.socket.socket')
-    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME, tz=timezone.utc))
     def test_publish_multiple_dns_records(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
 
@@ -297,7 +297,7 @@ class SysLogTest(unittest.TestCase):
     def create_rfc3164_dns(config: Config, json_object):
         json_message = json.dumps(json_object, cls=CustomJsonEncoder)
         assert config.syslog is not None
-        return f'<14>Mar 18 18:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}\n'.encode('utf-8')
+        return f'<14>Mar 19 01:00:00 {socket.gethostname()} {config.syslog.edgedns_app_name}: {json_message}\n'.encode('utf-8')
 
 
     @staticmethod
