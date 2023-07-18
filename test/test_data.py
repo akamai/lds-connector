@@ -112,6 +112,7 @@ def create_syslog_config():
     config.syslog = SysLogConfig(
         host='192.168.0.1',
         port=514,
+        protocol=SYSLOG_PROTOCOL_RFC3164,
         transport=SYSLOG_TRANSPORT_UDP,
         tls=None,
         lds_app_name='test_lds_app_name',

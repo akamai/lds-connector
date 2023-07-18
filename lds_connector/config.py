@@ -50,6 +50,7 @@ class SysLogTlsConfig:
 class SysLogConfig:
     host: str
     port: int
+    protocol: str
     transport: str
     tls: Optional[SysLogTlsConfig]
     lds_app_name: str
@@ -128,6 +129,7 @@ _KEY_SYSLOG = 'syslog'
 _KEY_SYSLOG_HOST = 'host'
 _KEY_SYSLOG_PORT = 'port'
 _KEY_SYSLOG_USE_TCP = 'use_tcp' # Deprecated
+_KEY_SYSLOG_PROTOCOL = 'protocol'
 _KEY_SYSLOG_TRANSPORT = 'transport'
 _KEY_SYSLOG_LDS_APP_NAME = 'lds_app_name'
 _KEY_SYSLOG_EDGEDNS_APP_NAME = 'edgedns_app_name'
@@ -141,6 +143,8 @@ SYSLOG_DELIM_LF = 'LF'
 SYSLOG_DELIM_CRLF = 'CRLF'
 SYSLOG_DELIM_NULL = 'NULL'
 SYSLOG_DELIM_OCTET = 'OCTET'
+SYSLOG_PROTOCOL_RFC3164 = 'RFC3164'
+SYSLOG_PROTOCOL_RFC5424 = 'RFC5424'
 
 _KEY_SYSLOG_TLS = 'tls'
 _KEY_SYSLOG_TLS_CA_FILE = 'ca_file'
@@ -307,6 +311,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             syslog_config = SysLogConfig(
                 host=syslog_yaml[_KEY_SYSLOG_HOST],
                 port=syslog_yaml[_KEY_SYSLOG_PORT],
+                protocol=syslog_yaml.get(_KEY_SYSLOG_PROTOCOL, SYSLOG_PROTOCOL_RFC3164),
                 transport=_get_syslog_transport(syslog_yaml),
                 tls=syslog_tls_config,
                 lds_app_name=syslog_yaml[_KEY_SYSLOG_LDS_APP_NAME],
