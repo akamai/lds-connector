@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, call, patch
 
 from freezegun import freeze_time
 
-from lds_connector.config import Config, SYSLOG_PROTOCOL_TCP, SYSLOG_PROTOCOL_TCP_TLS, SysLogTlsConfig
+from lds_connector.config import Config, SYSLOG_TRANSPORT_TCP, SYSLOG_TRANSPORT_TCP_TLS, SysLogTlsConfig
 from lds_connector.json import CustomJsonEncoder
 from lds_connector.log_file import LogEvent
 from lds_connector.syslog import SysLog
@@ -78,7 +78,7 @@ class SysLogTest(unittest.TestCase):
     def test_publish_tcp_log(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.protocol = SYSLOG_PROTOCOL_TCP
+        config.syslog.transport = SYSLOG_TRANSPORT_TCP
         mock_socket_inst = MagicMock()
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
@@ -97,7 +97,7 @@ class SysLogTest(unittest.TestCase):
     def test_publish_tls_log(self, mock_socket: MagicMock, mock_wrap_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.protocol = SYSLOG_PROTOCOL_TCP_TLS
+        config.syslog.transport = SYSLOG_TRANSPORT_TCP_TLS
         config.syslog.tls = SysLogTlsConfig(
             ca_file=test_data.CA_FILE,
             verify=False
@@ -122,7 +122,7 @@ class SysLogTest(unittest.TestCase):
     def test_publish_tls_log_verify(self, mock_socket: MagicMock, mock_wrap_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.protocol = SYSLOG_PROTOCOL_TCP_TLS
+        config.syslog.transport = SYSLOG_TRANSPORT_TCP_TLS
         config.syslog.tls = SysLogTlsConfig(
             ca_file=test_data.CA_FILE,
             verify=True
@@ -146,7 +146,7 @@ class SysLogTest(unittest.TestCase):
     def test_publish_tcp_dns_record(self, mock_socket: MagicMock):
         config = test_data.create_syslog_config()
         assert config.syslog is not None
-        config.syslog.protocol = SYSLOG_PROTOCOL_TCP
+        config.syslog.transport = SYSLOG_TRANSPORT_TCP
         mock_socket_inst = MagicMock()
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
