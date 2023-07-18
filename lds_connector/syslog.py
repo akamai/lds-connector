@@ -41,33 +41,33 @@ class SysLog(Handler):
         self.dns_queue: list[str] = []
 
         protocol = None
-        if config.syslog.protocol == SYSLOG_PROTOCOL_RFC3164:
+        if config.syslog.protocol == SysLogProtocol.RFC3164:
             protocol = SysLogger.PROTOCOL_RFC3164
-        elif config.syslog.protocol == SYSLOG_PROTOCOL_RFC5424:
+        elif config.syslog.protocol == SysLogProtocol.RFC5424:
             protocol = SysLogger.PROTOCOL_RFC5424
         else:
             assert False, 'Unexpected state. Syslog protocol was unknown ' + config.syslog.protocol
 
         transport = None
-        if config.syslog.transport == SYSLOG_TRANSPORT_UDP:
+        if config.syslog.transport == SysLogTransport.UDP:
             transport = SysLogger.TRANSPORT_UDP
-        elif config.syslog.transport == SYSLOG_TRANSPORT_TCP:
+        elif config.syslog.transport == SysLogTransport.TCP:
             transport = SysLogger.TRANSPORT_TCP
-        elif config.syslog.transport == SYSLOG_TRANSPORT_TCP_TLS:
+        elif config.syslog.transport == SysLogTransport.TCP_TLS:
             transport = SysLogger.TRANSPORT_TCP_TLS
         else:
             assert False, 'Unexpected state. Syslog transport was unknown: ' + config.syslog.transport
 
         delimiter_method = SysLogger.DELIM_NONE
-        if config.syslog.delimiter_method == SYSLOG_DELIM_NONE:
+        if config.syslog.delimiter_method == SysLogDelimiter.NONE:
             delimiter_method = SysLogger.DELIM_NONE
-        elif config.syslog.delimiter_method == SYSLOG_DELIM_LF:
+        elif config.syslog.delimiter_method == SysLogDelimiter.LF:
             delimiter_method = SysLogger.DELIM_LF
-        elif config.syslog.delimiter_method == SYSLOG_DELIM_CRLF:
+        elif config.syslog.delimiter_method == SysLogDelimiter.CRLF:
             delimiter_method = SysLogger.DELIM_CRLF
-        elif config.syslog.delimiter_method == SYSLOG_DELIM_NULL:
+        elif config.syslog.delimiter_method == SysLogDelimiter.CRLF:
             delimiter_method = SysLogger.DELIM_NULL
-        elif config.syslog.delimiter_method == SYSLOG_DELIM_OCTET:
+        elif config.syslog.delimiter_method == SysLogDelimiter.OCTET:
             delimiter_method = SysLogger.DELIM_OCTET
         else:
             assert False, 'Unexpected state. Syslog delimiter method was unknown: ' + config.syslog.delimiter_method
