@@ -19,6 +19,7 @@ import logging
 import os
 from dataclasses import dataclass
 from typing import Optional
+import enum
 
 import yaml
 
@@ -45,17 +46,32 @@ class SysLogTlsConfig:
     ca_file: str
     verify: bool
 
+class SysLogTransport(enum.Enum):
+    UDP = 0
+    TCP = 1
+    TCP_TLS = 2
+
+class SysLogProtocol(enum.Enum):
+    RFC3164 = 0
+    RFC5424 = 1
+
+class SysLogDelimiter(enum.Enum):
+    NONE = 0
+    LF = 1
+    CRLF = 2
+    NULL = 3
+    OCTET = 4
 
 @dataclass
 class SysLogConfig:
     host: str
     port: int
-    protocol: str
-    transport: str
+    protocol: SysLogProtocol
+    transport: SysLogTransport
     tls: Optional[SysLogTlsConfig]
     lds_app_name: str
     edgedns_app_name: Optional[str]
-    delimiter_method: str
+    delimiter_method: SysLogDelimiter
     from_host: Optional[str]
 
 
@@ -135,16 +151,6 @@ _KEY_SYSLOG_LDS_APP_NAME = 'lds_app_name'
 _KEY_SYSLOG_EDGEDNS_APP_NAME = 'edgedns_app_name'
 _KEY_SYSLOG_DELIM_METHOD = 'delimiter_method'
 _KEY_SYSLOG_FROM_HOST = 'from_host'
-SYSLOG_TRANSPORT_UDP = 'UDP'
-SYSLOG_TRANSPORT_TCP = 'TCP'
-SYSLOG_TRANSPORT_TCP_TLS = 'TCP_TLS'
-SYSLOG_DELIM_NONE = 'NONE'
-SYSLOG_DELIM_LF = 'LF'
-SYSLOG_DELIM_CRLF = 'CRLF'
-SYSLOG_DELIM_NULL = 'NULL'
-SYSLOG_DELIM_OCTET = 'OCTET'
-SYSLOG_PROTOCOL_RFC3164 = 'RFC3164'
-SYSLOG_PROTOCOL_RFC5424 = 'RFC5424'
 
 _KEY_SYSLOG_TLS = 'tls'
 _KEY_SYSLOG_TLS_CA_FILE = 'ca_file'
@@ -189,27 +195,30 @@ def is_config_valid(config: Config) -> bool:
             return False
 
     if config.syslog is not None:
-        if config.syslog.transport not in {SYSLOG_TRANSPORT_UDP, SYSLOG_TRANSPORT_TCP, SYSLOG_TRANSPORT_TCP_TLS}:
-            logging.error('Invalid config. Syslog transport is not supported: %s', config.syslog.transport)
-            return False
-        if config.syslog.transport == SYSLOG_TRANSPORT_TCP_TLS and config.syslog.tls is None:
+        if config.syslog.transport == SysLogTransport.TCP_TLS and config.syslog.tls is None:
             logging.error('Invalid config. Syslog transport is TCP_TLS but TLS config is missing')
             return False
 
     return True
 
 
-def _get_syslog_transport(syslog_yaml) -> str:
-    transport = syslog_yaml.get(_KEY_SYSLOG_TRANSPORT, None)
+def _get_syslog_transport(syslog_yaml) -> SysLogTransport:
+    transport_str = syslog_yaml.get(_KEY_SYSLOG_TRANSPORT, None)
 
-    if transport is None:
+    if transport_str is None:
         logging.warning('Config parameter "syslog.transport" was not specified. Falling back to deprecated "syslog.use_tcp". The program will sill work as expected.')
         if syslog_yaml[_KEY_SYSLOG_USE_TCP]:
-            transport = SYSLOG_TRANSPORT_TCP
+            return SysLogTransport.TCP
         else:
-            transport = SYSLOG_TRANSPORT_UDP
+            return SysLogTransport.UDP
+        
+    transport = getattr(SysLogTransport, transport_str, None)
+    if transport is None:
+        logging.error('Invalid config. Syslog transport is not supported. %s', transport_str)
+        exit(1)
 
     return transport
+    
 
 
 def read_yaml_config(yaml_stream) -> Optional[Config]:
@@ -308,15 +317,19 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
                     verify=syslog_tls_yaml.get(_KEY_SYSLOG_TLS_VERIFY, True)
                 )
 
+            protocol_str = syslog_yaml.get(_KEY_SYSLOG_PROTOCOL, None)
+            protocol = getattr(SysLogProtocol, protocol_str) if protocol_str is not None else SysLogProtocol.RFC3164
+            delimiter_str = syslog_yaml.get(_KEY_SYSLOG_DELIM_METHOD, None)
+            delimiter = getattr(SysLogDelimiter, delimiter_str) if delimiter_str is not None else SysLogDelimiter.LF
             syslog_config = SysLogConfig(
                 host=syslog_yaml[_KEY_SYSLOG_HOST],
                 port=syslog_yaml[_KEY_SYSLOG_PORT],
-                protocol=syslog_yaml.get(_KEY_SYSLOG_PROTOCOL, SYSLOG_PROTOCOL_RFC3164),
+                protocol=protocol,
                 transport=_get_syslog_transport(syslog_yaml),
                 tls=syslog_tls_config,
                 lds_app_name=syslog_yaml[_KEY_SYSLOG_LDS_APP_NAME],
                 edgedns_app_name=syslog_yaml.get(_KEY_SYSLOG_EDGEDNS_APP_NAME, None),
-                delimiter_method=syslog_yaml.get(_KEY_SYSLOG_DELIM_METHOD, SYSLOG_DELIM_LF),
+                delimiter_method=delimiter,
                 from_host=syslog_yaml.get(_KEY_SYSLOG_FROM_HOST, None)
             )
 
