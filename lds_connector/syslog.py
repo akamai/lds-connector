@@ -40,6 +40,14 @@ class SysLog(Handler):
         self.log_queue: list[LogEvent] = []
         self.dns_queue: list[str] = []
 
+        protocol = None
+        if config.syslog.protocol == SYSLOG_PROTOCOL_RFC3164:
+            protocol = SysLogger.PROTOCOL_RFC3164
+        elif config.syslog.protocol == SYSLOG_PROTOCOL_RFC5424:
+            protocol = SysLogger.PROTOCOL_RFC5424
+        else:
+            assert False, 'Unexpected state. Syslog protocol was unknown ' + config.syslog.protocol
+
         transport = None
         if config.syslog.transport == SYSLOG_TRANSPORT_UDP:
             transport = SysLogger.TRANSPORT_UDP
@@ -67,7 +75,7 @@ class SysLog(Handler):
         self.syslogger = SysLogger(
             transport=transport,
             address=(config.syslog.host, config.syslog.port),
-            syslog_flavor=SysLogger.SYSLOG_RFC3164, # TODO Add config option
+            protocol=protocol,
             facility=SysLogger.FAC_USER,
             delimiter_method=delimiter_method,
             from_host = config.syslog.from_host,

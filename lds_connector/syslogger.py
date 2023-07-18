@@ -51,8 +51,8 @@ class SysLogger:
     TRANSPORT_TCP_TLS   = 2
 
     # Syslog formats
-    SYSLOG_RFC3164 = 0
-    SYSLOG_RFC5424 = 1
+    PROTOCOL_RFC3164 = 0
+    PROTOCOL_RFC5424 = 1
 
     # Delimiting methods
     DELIM_NONE = 0
@@ -68,7 +68,7 @@ class SysLogger:
             self,
             transport: int,
             address: tuple[str, int],
-            syslog_flavor: int,
+            protocol: int,
             facility: int,
             delimiter_method: int,
             from_host: str | None = None,
@@ -77,7 +77,7 @@ class SysLogger:
     ):
         self.transport = transport
         self.address = address
-        self.syslog_flavor = syslog_flavor
+        self.protocol = protocol
         self.facility = facility
         self.from_address = from_host
         self.delimiter_method = delimiter_method
@@ -115,12 +115,12 @@ class SysLogger:
             )
 
             event = None
-            if self.syslog_flavor == SysLogger.SYSLOG_RFC3164:
+            if self.protocol == SysLogger.PROTOCOL_RFC3164:
                 event = self._format_rfc3164(record)
-            elif self.syslog_flavor == SysLogger.SYSLOG_RFC5424:
+            elif self.protocol == SysLogger.PROTOCOL_RFC5424:
                 event = self._format_rfc5424(record)
             else:
-                logging.error('Invalid syslog flavor: %s', self.syslog_flavor)
+                logging.error('Invalid syslog flavor: %s', self.protocol)
                 return
 
             if self.delimiter_method == SysLogger.DELIM_LF:
