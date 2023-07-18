@@ -46,7 +46,7 @@ class SysLog(Handler):
         elif config.syslog.protocol == SysLogProtocol.RFC5424:
             protocol = SysLogger.PROTOCOL_RFC5424
         else:
-            assert False, 'Unexpected state. Syslog protocol was unknown ' + config.syslog.protocol
+            assert False, 'Unexpected state. Syslog protocol was unknown ' + str(config.syslog.protocol)
 
         transport = None
         if config.syslog.transport == SysLogTransport.UDP:
@@ -56,7 +56,7 @@ class SysLog(Handler):
         elif config.syslog.transport == SysLogTransport.TCP_TLS:
             transport = SysLogger.TRANSPORT_TCP_TLS
         else:
-            assert False, 'Unexpected state. Syslog transport was unknown: ' + config.syslog.transport
+            assert False, 'Unexpected state. Syslog transport was unknown: ' + str(config.syslog.transport)
 
         delimiter_method = SysLogger.DELIM_NONE
         if config.syslog.delimiter_method == SysLogDelimiter.NONE:
@@ -65,12 +65,12 @@ class SysLog(Handler):
             delimiter_method = SysLogger.DELIM_LF
         elif config.syslog.delimiter_method == SysLogDelimiter.CRLF:
             delimiter_method = SysLogger.DELIM_CRLF
-        elif config.syslog.delimiter_method == SysLogDelimiter.CRLF:
+        elif config.syslog.delimiter_method == SysLogDelimiter.NULL:
             delimiter_method = SysLogger.DELIM_NULL
         elif config.syslog.delimiter_method == SysLogDelimiter.OCTET:
             delimiter_method = SysLogger.DELIM_OCTET
         else:
-            assert False, 'Unexpected state. Syslog delimiter method was unknown: ' + config.syslog.delimiter_method
+            assert False, 'Unexpected state. Syslog delimiter method was unknown: ' + str(config.syslog.delimiter_method)
 
         self.syslogger = SysLogger(
             transport=transport,
