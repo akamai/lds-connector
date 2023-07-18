@@ -40,6 +40,7 @@ class Connector:
         self.log_manager: LogManager = LogManager(config)
         self.edgedns: Optional[EdgeDnsManager] = create_edgedns_manager(config)
         self.event_handler: Handler
+        self.total_processed = 0
 
         if config.splunk is not None:
             self.event_handler = Splunk(config)
@@ -71,19 +72,16 @@ class Connector:
         """
         Process all available log files
         """
-        logging.info('Processing any available log files')
+        logging.info('Processing any new log files...')
+        self.total_processed = 0
 
         log_file = self.log_manager.get_next_log()
-
-        if log_file is None:
-            logging.info('No available log files')
-            return
 
         while log_file is not None:
             self._process_log_file(log_file)
             log_file = self.log_manager.get_next_log()
 
-        logging.info('Finished processing any available log files')
+        logging.info('Finished processing all new log files. Total logs processed: %s', self.total_processed)
 
     def _process_log_file(self, log_file: LogFile) -> None:
         """
@@ -94,7 +92,7 @@ class Connector:
 
         Returns: None
         """
-        logging.info('Processing log file %s', log_file.local_path_txt)
+        logging.info('Processing log file: %s', log_file.filename_gz)
         try:
             with open(log_file.local_path_txt, 'r', encoding='utf-8') as file:
                 self._process_log_lines(log_file, file)
@@ -104,8 +102,8 @@ class Connector:
         finally:
             self.log_manager.update_last_log_files()
             self.event_handler.clear()
-            logging.info('Processed log file %s. Finished processing: %s. Last line processed: %d', \
-                log_file.local_path_txt, log_file.processed, log_file.last_processed_line)
+            logging.info('Processed log file: %s. Last line number: %d', log_file.filename_gz, log_file.last_processed_line)
+            self.total_processed += log_file.last_processed_line
             os.remove(log_file.local_path_txt)
 
     def _process_log_lines(self, log_file: LogFile, file):
