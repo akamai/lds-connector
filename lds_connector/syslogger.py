@@ -46,9 +46,9 @@ class SysLogger:
     FAC_SOLCRON   = 15      #  Scheduling daemon (Solaris)
 
     # Transport types
-    PROTOCOL_UDP       = 0
-    PROTOCOL_TCP       = 1
-    PROTOCOL_TCP_TLS   = 2
+    TRANSPORT_UDP       = 0
+    TRANSPORT_TCP       = 1
+    TRANSPORT_TCP_TLS   = 2
 
     # Syslog formats
     SYSLOG_RFC3164 = 0
@@ -66,7 +66,7 @@ class SysLogger:
 
     def __init__(
             self,
-            protocol: int,
+            transport: int,
             address: tuple[str, int],
             syslog_flavor: int,
             facility: int,
@@ -75,7 +75,7 @@ class SysLogger:
             tls_ca_file: str | None = None,
             tls_check_hostname: bool = True
     ):
-        self.protocol = protocol
+        self.transport = transport
         self.address = address
         self.syslog_flavor = syslog_flavor
         self.facility = facility
@@ -86,7 +86,7 @@ class SysLogger:
         self.socket = None
 
         self.ssl_context = None
-        if self.protocol == SysLogger.PROTOCOL_TCP_TLS:
+        if self.transport == SysLogger.TRANSPORT_TCP_TLS:
             self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
             self.ssl_context.load_verify_locations(tls_ca_file)
             self.ssl_context.verify_mode = ssl.CERT_REQUIRED
@@ -95,7 +95,7 @@ class SysLogger:
 
     def __del__(self):
         if self.socket is not None:
-            if self.protocol == SysLogger.PROTOCOL_TCP_TLS:
+            if self.transport == SysLogger.TRANSPORT_TCP_TLS:
                 self.socket.shutdown(socket.SHUT_RDWR)
             self.socket.close()
 
@@ -145,17 +145,17 @@ class SysLogger:
             self._create_socket()
 
         assert self.socket is not None, 'Unexpected state. Socket was not created'
-        if self.protocol == SysLogger.PROTOCOL_UDP:
+        if self.transport == SysLogger.TRANSPORT_UDP:
             self.socket.sendto(event, self.address)
-        elif self.protocol == SysLogger.PROTOCOL_TCP or SysLogger.PROTOCOL_TCP_TLS:
+        elif self.transport == SysLogger.TRANSPORT_TCP or SysLogger.TRANSPORT_TCP_TLS:
             self.socket.sendall(event)
 
 
     def _create_socket(self):
         socktype = socket.SOCK_DGRAM
-        if self.protocol == SysLogger.PROTOCOL_UDP:
+        if self.transport == SysLogger.TRANSPORT_UDP:
             socktype = socket.SOCK_DGRAM
-        elif self.protocol == SysLogger.PROTOCOL_TCP or self.protocol == SysLogger.PROTOCOL_TCP_TLS:
+        elif self.transport == SysLogger.TRANSPORT_TCP or self.transport == SysLogger.TRANSPORT_TCP_TLS:
             socktype = socket.SOCK_STREAM
 
         host, port = self.address
@@ -183,7 +183,7 @@ class SysLogger:
             raise err
         assert sock is not None, 'Unexpected state. Socket was not created'
 
-        if self.protocol == SysLogger.PROTOCOL_TCP_TLS:
+        if self.transport == SysLogger.TRANSPORT_TCP_TLS:
             assert self.ssl_context is not None, 'Unexpected state. SSL context was not created'
             if self.tls_check_hostname:
                 sock = self.ssl_context.wrap_socket(sock, server_hostname=host)

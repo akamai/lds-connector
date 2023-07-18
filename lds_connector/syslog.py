@@ -40,15 +40,15 @@ class SysLog(Handler):
         self.log_queue: list[LogEvent] = []
         self.dns_queue: list[str] = []
 
-        protocol = None
-        if config.syslog.protocol == SYSLOG_PROTOCOL_UDP:
-            protocol = SysLogger.PROTOCOL_UDP
-        elif config.syslog.protocol == SYSLOG_PROTOCOL_TCP:
-            protocol = SysLogger.PROTOCOL_TCP
-        elif config.syslog.protocol == SYSLOG_PROTOCOL_TCP_TLS:
-            protocol = SysLogger.PROTOCOL_TCP_TLS
+        transport = None
+        if config.syslog.transport == SYSLOG_TRANSPORT_UDP:
+            transport = SysLogger.TRANSPORT_UDP
+        elif config.syslog.transport == SYSLOG_TRANSPORT_TCP:
+            transport = SysLogger.TRANSPORT_TCP
+        elif config.syslog.transport == SYSLOG_TRANSPORT_TCP_TLS:
+            transport = SysLogger.TRANSPORT_TCP_TLS
         else:
-            assert False, 'Unexpected state. Syslog protocol was unknown: ' + config.syslog.protocol
+            assert False, 'Unexpected state. Syslog transport was unknown: ' + config.syslog.transport
 
         delimiter_method = SysLogger.DELIM_NONE
         if config.syslog.delimiter_method == SYSLOG_DELIM_NONE:
@@ -65,7 +65,7 @@ class SysLog(Handler):
             assert False, 'Unexpected state. Syslog delimiter method was unknown: ' + config.syslog.delimiter_method
 
         self.syslogger = SysLogger(
-            protocol=protocol,
+            transport=transport,
             address=(config.syslog.host, config.syslog.port),
             syslog_flavor=SysLogger.SYSLOG_RFC3164, # TODO Add config option
             facility=SysLogger.FAC_USER,

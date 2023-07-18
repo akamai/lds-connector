@@ -50,7 +50,7 @@ class SysLogTlsConfig:
 class SysLogConfig:
     host: str
     port: int
-    protocol: str
+    transport: str
     tls: Optional[SysLogTlsConfig]
     lds_app_name: str
     edgedns_app_name: Optional[str]
@@ -128,14 +128,14 @@ _KEY_SYSLOG = 'syslog'
 _KEY_SYSLOG_HOST = 'host'
 _KEY_SYSLOG_PORT = 'port'
 _KEY_SYSLOG_USE_TCP = 'use_tcp' # Deprecated
-_KEY_SYSLOG_PROTOCOL = 'protocol'
+_KEY_SYSLOG_TRANSPORT = 'transport'
 _KEY_SYSLOG_LDS_APP_NAME = 'lds_app_name'
 _KEY_SYSLOG_EDGEDNS_APP_NAME = 'edgedns_app_name'
 _KEY_SYSLOG_DELIM_METHOD = 'delimiter_method'
 _KEY_SYSLOG_FROM_HOST = 'from_host'
-SYSLOG_PROTOCOL_UDP = 'UDP'
-SYSLOG_PROTOCOL_TCP = 'TCP'
-SYSLOG_PROTOCOL_TCP_TLS = 'TCP_TLS'
+SYSLOG_TRANSPORT_UDP = 'UDP'
+SYSLOG_TRANSPORT_TCP = 'TCP'
+SYSLOG_TRANSPORT_TCP_TLS = 'TCP_TLS'
 SYSLOG_DELIM_NONE = 'NONE'
 SYSLOG_DELIM_LF = 'LF'
 SYSLOG_DELIM_CRLF = 'CRLF'
@@ -185,27 +185,27 @@ def is_config_valid(config: Config) -> bool:
             return False
 
     if config.syslog is not None:
-        if config.syslog.protocol not in {SYSLOG_PROTOCOL_UDP, SYSLOG_PROTOCOL_TCP, SYSLOG_PROTOCOL_TCP_TLS}:
-            logging.error('Invalid config. Syslog protocol is not supported: %s', config.syslog.protocol)
+        if config.syslog.transport not in {SYSLOG_TRANSPORT_UDP, SYSLOG_TRANSPORT_TCP, SYSLOG_TRANSPORT_TCP_TLS}:
+            logging.error('Invalid config. Syslog transport is not supported: %s', config.syslog.transport)
             return False
-        if config.syslog.protocol == SYSLOG_PROTOCOL_TCP_TLS and config.syslog.tls is None:
-            logging.error('Invalid config. Protocol is TCP_TLS but TLS config is missing')
+        if config.syslog.transport == SYSLOG_TRANSPORT_TCP_TLS and config.syslog.tls is None:
+            logging.error('Invalid config. Syslog transport is TCP_TLS but TLS config is missing')
             return False
 
     return True
 
 
-def _get_syslog_protocol(syslog_yaml) -> str:
-    protocol = syslog_yaml.get(_KEY_SYSLOG_PROTOCOL, None)
+def _get_syslog_transport(syslog_yaml) -> str:
+    transport = syslog_yaml.get(_KEY_SYSLOG_TRANSPORT, None)
 
-    if protocol is None:
-        logging.warning('Config parameter "syslog.protocol" was not specified. Falling back to deprecated "syslog.use_tcp". The program will sill work as expected.')
+    if transport is None:
+        logging.warning('Config parameter "syslog.transport" was not specified. Falling back to deprecated "syslog.use_tcp". The program will sill work as expected.')
         if syslog_yaml[_KEY_SYSLOG_USE_TCP]:
-            protocol = SYSLOG_PROTOCOL_TCP
+            transport = SYSLOG_TRANSPORT_TCP
         else:
-            protocol = SYSLOG_PROTOCOL_UDP
+            transport = SYSLOG_TRANSPORT_UDP
 
-    return protocol
+    return transport
 
 
 def read_yaml_config(yaml_stream) -> Optional[Config]:
@@ -307,7 +307,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
             syslog_config = SysLogConfig(
                 host=syslog_yaml[_KEY_SYSLOG_HOST],
                 port=syslog_yaml[_KEY_SYSLOG_PORT],
-                protocol=_get_syslog_protocol(syslog_yaml),
+                transport=_get_syslog_transport(syslog_yaml),
                 tls=syslog_tls_config,
                 lds_app_name=syslog_yaml[_KEY_SYSLOG_LDS_APP_NAME],
                 edgedns_app_name=syslog_yaml.get(_KEY_SYSLOG_EDGEDNS_APP_NAME, None),
