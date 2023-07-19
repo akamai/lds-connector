@@ -109,16 +109,52 @@ LDS Connector Configuration
 
 We need to configure the LDS connector script to deliver logs to Splunk.
 
+Use the [config_template.yaml](../../config_template.yaml) file for reference
+
 You'll need the following information
 - The hostname or IP address of the Splunk Server
 - The HEC port configured above
 - Whether HEC uses SSL or not
 - The LDS token generated above.
 
-In your LDS connector YAML configuration file
-- Remove the `syslog` configuration if present
-- Add the `splunk` configuration 
-- Use the [config_template.yaml](../../config_template.yaml) file for reference
+Below are the Splunk YAML configuration options.
+
+- `splunk.host`: 
+   - Required: Yes
+   - The Splunk hostname or IP address
+- `splunk.hec_port`:
+   - Required: Yes
+   - The HTTP Event Collector port
+- `splunk.hec_use_ssl`:
+   - Required: Yes
+   - Whether to use SSL when sending events to the HTTP Event Collector
+- `splunk.lds_hec.token`: 
+   - Required: Yes
+   - The HTTP Event Collector's token
+- `splunk.lds_hec.source_type`:
+   - Required: No, default can be set for HTTP Event Collector token in Splunk
+   - The Splunk source type to use
+- `splunk.lds_hec.index`:
+   - Required: No, default can be set for HTTP Event Collector token in Splunk
+   - The Splunk index to store events under
+- `splunk.lds_hec.batch_size`:
+   - Required: No, default is 10
+   - The number of log messages to publish at once to Splunk
+- `splunk.edgedns_hec.*`:
+   - Required: No
+   - Only configure this if you're using the Record Set Delivery feature
+
+Below is an example.
+```yaml
+splunk : 
+  host : '127.0.0.1'
+  hec_port : 8088
+  hec_use_ssl : true 
+  lds_hec :
+    token : '8e1ea35b-9904-47df-94af-442b415b90b6'
+    source_type: 'lds_log_dns'
+    index: 'sandbox'
+```
 
 
 References
