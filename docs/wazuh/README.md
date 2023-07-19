@@ -1,7 +1,8 @@
 Introduction
 ============
 
-This document details how to configure log delivery to Wazuh.
+This document details how to configure log delivery to Wazuh. The LDS Connector uses it's Syslog support to deliver
+to Wazuh. However, this guide shows how to configure Wazuh itself.
 
 This document covers the following
 - Wazuh basics / key terminology
@@ -43,11 +44,10 @@ some configuration.
 Wazuh Configuration
 ===================
 
-
 Enable SysLog Receiving
 -----------------------
 
-The LDS connector sends Akamai LDS logs to a Wazuh Server using remote SysLog messages. 
+The LDS Connector sends Akamai log messages to a Wazuh Server using syslog messages. 
 
 SSH into the Wazuh Server. Add the syslog remote to the Wazuh Server configuration at `/var/ossec/etc/ossec.conf`
 - `port`: Any available port
@@ -100,65 +100,13 @@ that was decoded using the `lds_dns_log_decoder`. You may need to change the rul
 
 Restart the Wazuh Server: `sudo systemctl restart wazuh-manager` 
 
-Create an Index Template
--------------------------
-
-The Wazuh Server augments the log event with fields extracted by the decoder. These fields are all strings. The
-Wazuh Server sends the alert log events to the Wazuh Indexer as JSON.
-
-The Wazuh Indexer receives the log events and stores them in an index. A **mapping** defines how a field in
-the log event JSON should be stored (i.e. the data type). A **dynamic mapping** is dynamically applied to a field 
-based on some assumptions about that field. An **explicit mapping** can be added to override the dynamic mapping.
-
-For example, consider a field called "timestamp" with value "1677705537136". The dynamic mapping would recognize this as 
-a timestamp by the field name. It would assume it's an epoch timestamp in milliseconds. It would correctly parse this
-into a `date` type with human value Wednesday, March 1, 2023 9:18:57.136 PM.
-
-For another example, consider a field called "timestamp" with value "1677705930". The dynamic mapping would also 
-recognize this as a timestamp by the field name. However, it would assume it's an epoch timestamp in milliseconds! 
-It would incorrectly parse this into a `date` type with human value Tuesday, January 20, 1970 10:01:45 AM.
-
-How do we fix this? We need to add an **index template** to the Wazuh Indexer. This template will apply to all 
-Wazuh alert indices (since one is created for each day). 
-
-This particular issues occurs with the DNS decoder `lds_dns_logs_decoder` on the `orig_timestamp` field. I'll show 
-the fix.
-
-We'll run a command in the Wazuh Dashboard. Go to Management > Dev Tools > Console.
-
-Create a template called `wazuh_lds_dns_logs` with the following request. This applies to the daily Wazuh indices, i.e. 
-wazuh-alerts-4.x-2023.03.01
-
-```
-PUT /_template/wazuh_lds_dns
-{
-  "index_patterns" : [
-    "wazuh-alerts-4.x-*",
-    "wazuh-archives-4.x-*"
-  ],
-  "mappings" : {
-    "properties" :  {
-      "data" : {
-        "properties" : {
-          "orig_timestamp" : {
-            "type" : "date",
-            "format" : "epoch_second"
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-![](images/wazuh_index_template.jpg)
-
-
 
 LDS Connector Configuration
 ============================
 
-We need to configure the LDS connector script to deliver logs to Wazuh using SysLog.
+We need to configure the LDS connector script to deliver logs to Wazuh using Syslog.
+
+Use the [config_template.yaml](../../config_template.yaml) file for reference
 
 You'll need the following information
 - The hostname or IP address of the Wazuh Server
@@ -166,10 +114,56 @@ You'll need the following information
 - The SysLog protocol (TCP or UDP) configured above
 - The SysLog program name used above. I used "lds_dns_log".
 
-In your LDS connector YAML configuration file
-- Remove the Splunk configuration 
-- Add the SysLog configuration 
-- Use the [config_template.yaml](../../config_template.yaml) file for reference
+Below are the Syslog YAML configuration options.
+- `syslog.host`: 
+    - Required: Yes
+    - The Wazuh Server's hostname or IP address
+- `syslog.port`: 
+    - Required: Yes
+    - The Wazuh Server's syslog port
+- `syslog.protocol`: 
+    - Required: No, default value `RFC3164`
+    - Allowed values: `RFC3164`, `RFC5424`
+    - This should be `RFC3164` for Wazuh
+- `syslog.transport`:
+    - Required: Yes
+    - Allowed values: `UDP`, `TCP`, `TCP_TLS`
+    - This should be `UDP` or `TCP` for Wazuh
+- `syslog.lds_app_name`
+    - Required: Yes
+    - The syslog header's app name field to use when delivering LDS log messages. This is the program name used above.
+- `syslog.edgedns_app_name`
+    - Required: No
+    - The syslog header's app name field to use when delivering Edge DNS records.
+    - Only configure this if you're using the Record Set Delivery feature
+- `syslog.delimiter_method`
+    - Required: No, default value `LF`
+    - Allowed values: 
+        - `LF`: Append a `\n` to each syslog message
+        - `CRLF`: Append a `\r\n` to each syslog message
+        - `NONE`: Do nothing
+        - `NULL`: Append a `\x00` to each syslog message
+        - `OCTET`: Prepend the message length followed by space to each syslog message. See RFC 6587.
+    - This should be `LF` for Wazuh.
+- `syslog.from_host`
+    - Required: No, default value is output of `socket.gethostname()`.
+    - The syslog header's hostname field. If this isn't set, the system's hostname will be used.
+- `syslog.tls.ca_file`
+    - Required: Only if `syslog.transport` is `TCP_TLS`
+    - This should be omitted. Wazuh doesn't support TLS
+- `syslog.tls.verify`
+    - Required: No, default value `true`
+    - This should be omitted. Wazuh doesn't support TLS.
+
+
+Below is an example. You can ommit fields to use the default.
+```yaml
+syslog : 
+  host : '127.0.0.1'
+  port: 514
+  transport: 'TCP'
+  lds_app_name : 'lds_dns_log'
+```
 
 
 Troubleshooting

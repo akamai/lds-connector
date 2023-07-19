@@ -26,9 +26,11 @@ message length. However, many applications don't support this and still use the 
 The LDS Connector supports both octet stuffing and delimiter characters.
 
 
-# Syslog Configuration
+# LDS Connector Configuration
 
-Ensure the `splunk` configuration is deleted from your config file.
+We need to configure the LDS connector script to deliver logs using Syslog.
+
+Use the [config_template.yaml](../../config_template.yaml) file for reference.
 
 - `syslog.host`: 
     - Required: Yes
@@ -41,15 +43,16 @@ Ensure the `splunk` configuration is deleted from your config file.
     - Allowed values: `RFC3164`, `RFC5424`
     - The syslog protocol to use
 - `syslog.transport`:
-    - Required: No, default value `UDP`
+    - Required: Yes
     - Allowed values: `UDP`, `TCP`, `TCP_TLS`
     - The transport protocol to send the syslog messages over
 - `syslog.lds_app_name`
     - Required: Yes
     - The syslog header's app name field to use when delivering LDS log messages
 - `syslog.edgedns_app_name`
-    - Required: Only if `edgedns.send_records` is true
-    - The syslog header's app name field to use when delivering Edge DNS records
+    - Required: No
+    - The syslog header's app name field to use when delivering Edge DNS records.
+    - Only configure this if you're using the Record Set Delivery feature
 - `syslog.delimiter_method`
     - Required: No, default value `LF`
     - Allowed values: 
