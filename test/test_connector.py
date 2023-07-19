@@ -22,6 +22,7 @@ import unittest
 from os import path
 from test import test_data
 from unittest.mock import MagicMock
+from typing import List
 
 from lds_connector.connector import Connector
 from lds_connector.splunk import Splunk
@@ -307,7 +308,7 @@ class ConnectorTest(unittest.TestCase):
         self.assertEqual(connector.event_handler._post.call_count, 1)
         
     @staticmethod
-    def read_log_lines() -> list[str]:
+    def read_log_lines() -> List[str]:
         with open(ConnectorTest._TEST_LOG_FILENAME, 'r', encoding='utf-8') as file:
             return file.readlines()
 

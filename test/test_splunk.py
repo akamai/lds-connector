@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, patch
 from os import path
 import socket
 import json
-from typing import Any
+from typing import Any, Dict
 
 from test import test_data
 
@@ -367,7 +367,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     @staticmethod
-    def create_expected_record_event(config: Config, event, optionals=True) -> dict[str, Any]:
+    def create_expected_record_event(config: Config, event, optionals=True) -> Dict[str, Any]:
         assert config.splunk is not None
         assert config.splunk.edgedns_hec is not None
         event = {

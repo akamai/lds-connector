@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import socket
 import ssl
+from typing import Optional, Tuple
 
 @dataclass
 class SysLogRecord:
@@ -11,9 +12,9 @@ class SysLogRecord:
     time: datetime
     hostname: str
     app_name: str
-    process_id: str | None          # Not yet supported
-    message_id: str | None          # Not yet supported
-    structured_data: str | None     # Not yet supported
+    process_id: Optional[str]          # Not yet supported
+    message_id: Optional[str]          # Not yet supported
+    structured_data: Optional[str]     # Not yet supported
     message: str
 
 class SysLogger:
@@ -67,12 +68,12 @@ class SysLogger:
     def __init__(
             self,
             transport: int,
-            address: tuple[str, int],
+            address: Tuple[str, int],
             protocol: int,
             facility: int,
             delimiter_method: int,
-            from_host: str | None = None,
-            tls_ca_file: str | None = None,
+            from_host: Optional[str] = None,
+            tls_ca_file: Optional[str] = None,
             tls_check_hostname: bool = True
     ):
         self.transport = transport
