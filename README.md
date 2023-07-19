@@ -7,7 +7,7 @@ Introduction
 ------------
 
 The LDS Connector is a solution to periodically deliver Akamai log events into third-party data platforms. 
-We currently support delivering logs to Splunk, Wazuh, and anything other platform accepting SysLog messages.
+We currently support delivering logs to Splunk, Wazuh, and any platform that can receive Syslog messages.
 
 The Log Delivery Service (LDS) is an Akamai service that periodically delivers Akamai log files via email, FTP storage, 
 or Akamai NetStorage. 
@@ -18,18 +18,44 @@ them to your data platform.
 The LDS Connector's **Log Delivery** feature monitors NetStorage for LDS logs, parses them into log events, and delivers
 them to your data platform.
 
-The LDS Connector's **Record Set Delivery** feature periodically fetches an Edge DNS record set using the Akamai APIs,
-parses them into log events, and delivers them to your data platform. This currently only suports a single zone.
+The LDS Connector's **Record Set Delivery** add-on feature periodically fetches an Edge DNS record set using the 
+Akamai APIs, parses them into log events, and delivers them to your data platform. This currently only suports a 
+single zone.
 
 This document will show you
 1. How to configure Log Delivery Service to send your Akamai logs to NetStorage
 2. How to configure your third-party data platform to receive Akamai logs
   - For Splunk users: How to enable event receiving, add a source type, and add field extraction
-  - For Wazuh users: How to enable SysLog receiving, add a custom decoder, add a custom rule
+  - For Wazuh users: How to enable Syslog receiving, add a custom decoder, add a custom rule
+  - For SysLog users: How to enable Syslog receiving
 3. How to install, configure, and run the LDS Connector script
 
-The LDS Connector works with any Log Delivery Service log format. However, we'll provide specific examples for DNS 
-logs.
+The LDS Connector works with any Log Delivery Service log format. However, it's only been tested with Edge DNS logs.
+
+
+How It Works
+============
+
+The LDS Connector is configured using a YAML file. In this file you'll configure...
+- Your NetStorage credentials
+- Where to download logs from in NetStorage
+- Where you want to deliver logs to. This is either Splunk or Syslog.
+
+The LDS Connector performs the following steps when launched...
+1. Parse the YAML configuration file. Fail if there's any invalid settings
+2. Fetch the list of available log files from NetStorage.
+3. Determine the next log file to process chronologically. Download and uncompress it.
+4. For each log line in the log file, send it to Splunk or Syslog
+5. Repeat
+
+The LDS Connector will eventually process all available log files. After this, it'll periodically check NetStorage
+for new log files to process.
+
+The LDS Connector stores which log files have already been processed for each LDS object. If the LDS Connector
+is restarted, then it can resume where it left off. This file is stored in the `resume_data.picke` in the log
+download directory. If you need to reset LDS, then delete this file.
+
+The LDS Connector will continuously retry if communication to Splunk / Syslog fails. 
 
 
 Getting Started
@@ -47,7 +73,6 @@ If you want to deliver logs via SysLog, then see the [SysLog documentation](docs
 If you want to deliver logs to Wazuh, then see the [Wazuh documentation](docs/wazuh/README.md).
 
 
-
 Configuration
 -------------
 
@@ -59,27 +84,25 @@ deleted if they're not needed.
 The documents linked in the above Prerequisites section detail how to set each of these fields. They include 
 annotated screenshots. Please consult this documentation.
 
-See [here](docs/lds_connector/README.md) for further details on the `lds` fields.
 
 Installation
 ------------
 
-This package will eventually be ported to PyPI and installable via pip. I've tested this script on macOS and 
-Ubuntu.
+The LDS Connector requires Python >= 3.6, PIP, and virtualenv installed. Install these from your package manager
+or a python version management tool like `pyenv`.
 
-You'll need to have Python >= 3.9, PIP, and virtualenv installed. On Ubuntu, install the packages `python3.9` 
-and `python3.9-venv`. 
+I've tested this script on both macOS and Ubuntu. 
 
 First, create a virtual environment and activate it. 
 ```sh
-lds-connector % python3.9 -m venv env
+lds-connector % python3 -m venv env
 lds-connector % source env/bin/activate
 ```
 
 Next, ensure PIP is up-to-date and install the required packages. 
 ```sh
-lds-connector % python3.9 -m pip install --upgrade pip
-lds-connector % python3.9 -m pip install -r requirements.txt
+lds-connector % python3 -m pip install --upgrade pip
+lds-connector % python3 -m pip install -r requirements.txt
 ```
 
 Great job! The script is ready.
@@ -91,7 +114,7 @@ Running
 Run the script with the following command. Use the `-h` flag for the help message. 
 
 ``` sh
-$ python3.9 lds_connector.py --config config.yaml
+lds-connector % python3 lds_connector.py --config config.yaml
 ```
 
 
@@ -100,30 +123,6 @@ Monitoring
 
 The LDS connector script emits logs. We're working on improving this and are considering integration with monitoring 
 services like Grafana
-
-
-Script Features
-===============
-
-At the highest-level, the script moves log data from NetStorage into destination services.
-
-Let's dig into how it works a bit.
-- The script is configured using a YAML file. This is passed as a command line argument. The script must be restarted
-  to process any changes to the YAML file.
-- The script processes the log files chronologically. The log files are named using 
-  [a standard format](https://techdocs.akamai.com/log-delivery/docs/file-names) that contains the time range, 
-  an ID (typically Edge DNS zone), and a part number. The script fetches the listing of available log files and sorts them by the start time. 
-- The script can deliver logs to either Splunk or Wazuh. 
-- The script keeps track of the last processed log file and line for each ID (zone). This metadata is written to disk 
-  such that the script can resume where it left off if restarted.
-
-If the script fails to parse a log line, it logs an error and skips it.
-If the script fails to publish a log event to Splunk, it retries until successful.
-
-This script can optionally deliver Edge DNS records for a given zone.
-- The user enables Edge DNS record sending for a given zone in the YAML config
-- The script periodically fetches the record set for the zone from an Akamai API, reformats them, and sends them to
-  Splunk
 
 
 Example Use Case
@@ -157,7 +156,7 @@ Developer Notes
 
 You can run the unit tests using the following command
 ```sh
-lds-connector % python3.9 -m unittest discover -vb
+lds-connector % python3 -m unittest discover -vb
 ... Test output
 ----------------------------------------------------------------------
 Ran 21 tests in 0.018s
