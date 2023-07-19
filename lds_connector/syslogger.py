@@ -4,6 +4,7 @@ from datetime import datetime
 import socket
 import ssl
 from typing import Optional, Tuple
+import time
 
 @dataclass
 class SysLogRecord:
@@ -101,55 +102,60 @@ class SysLogger:
             self.socket.close()
 
 
-    def log_info(self, app_name: str, time: datetime, message: str):
+    def log_info(self, app_name: str, timestamp: datetime, message: str):
+        record = SysLogRecord(
+            severity = SysLogger.SEV_INFO,
+            facility = self.facility,
+            time = timestamp,
+            hostname = self.from_address if self.from_address else socket.gethostname(),
+            app_name = app_name,
+            process_id = None,
+            message_id = None,
+            structured_data = None,
+            message = message
+        )
+
+        event = None
+        if self.protocol == SysLogger.PROTOCOL_RFC3164:
+            event = self._format_rfc3164(record)
+        elif self.protocol == SysLogger.PROTOCOL_RFC5424:
+            event = self._format_rfc5424(record)
+        else:
+            logging.error('Invalid syslog flavor: %s', self.protocol)
+            return
+
+        if self.delimiter_method == SysLogger.DELIM_LF:
+            event += '\n'
+        elif self.delimiter_method == SysLogger.DELIM_CRLF:
+            event += '\r\n'
+        elif self.delimiter_method == SysLogger.DELIM_NULL:
+            event += '\x00'
+        elif self.delimiter_method == SysLogger.DELIM_OCTET:
+            event = f'{len(event)} {event}'
+
+        event_bytes = event.encode('utf-8')
+
+        while not self._send(event_bytes):
+            time.sleep(1)
+
+
+    def _send(self, event: bytes) -> bool:
         try:
-            record = SysLogRecord(
-                severity = SysLogger.SEV_INFO,
-                facility = self.facility,
-                time = time,
-                hostname = self.from_address if self.from_address else socket.gethostname(),
-                app_name = app_name,
-                process_id = None,
-                message_id = None,
-                structured_data = None,
-                message = message
-            )
+            if not self.socket:
+                self._create_socket()
 
-            event = None
-            if self.protocol == SysLogger.PROTOCOL_RFC3164:
-                event = self._format_rfc3164(record)
-            elif self.protocol == SysLogger.PROTOCOL_RFC5424:
-                event = self._format_rfc5424(record)
-            else:
-                logging.error('Invalid syslog flavor: %s', self.protocol)
-                return
-
-            if self.delimiter_method == SysLogger.DELIM_LF:
-                event += '\n'
-            elif self.delimiter_method == SysLogger.DELIM_CRLF:
-                event += '\r\n'
-            elif self.delimiter_method == SysLogger.DELIM_NULL:
-                event += '\x00'
-            elif self.delimiter_method == SysLogger.DELIM_OCTET:
-                event = f'{len(event)} {event}'
-
-            event_bytes = event.encode('utf-8')
-
-            self._send(event_bytes)
-
-        except Exception as exception:
-            logging.error('Failed sending syslog message: %s', exception)
-
-
-    def _send(self, event: bytes):
-        if not self.socket:
-            self._create_socket()
-
-        assert self.socket is not None, 'Unexpected state. Socket was not created'
-        if self.transport == SysLogger.TRANSPORT_UDP:
-            self.socket.sendto(event, self.address)
-        elif self.transport == SysLogger.TRANSPORT_TCP or SysLogger.TRANSPORT_TCP_TLS:
-            self.socket.sendall(event)
+            assert self.socket is not None, 'Unexpected state. Socket was not created'
+            if self.transport == SysLogger.TRANSPORT_UDP:
+                self.socket.sendto(event, self.address)
+            elif self.transport == SysLogger.TRANSPORT_TCP or SysLogger.TRANSPORT_TCP_TLS:
+                self.socket.sendall(event)
+            return True
+        except Exception as exc:
+            logging.error('Syslog publish failed: %s', exc)
+            if self.socket is not None:
+                self.socket.close()
+                self.socket = None
+            return False
 
 
     def _create_socket(self):
