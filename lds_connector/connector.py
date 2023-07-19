@@ -40,6 +40,7 @@ class Connector:
         self.log_manager: LogManager = LogManager(config)
         self.edgedns: Optional[EdgeDnsManager] = create_edgedns_manager(config)
         self.event_handler: Handler
+        self.total_processed = 0
 
         if config.splunk is not None:
             self.event_handler = Splunk(config)
@@ -72,6 +73,7 @@ class Connector:
         Process all available log files
         """
         logging.info('Processing any new log files...')
+        self.total_processed = 0
 
         log_file = self.log_manager.get_next_log()
 
@@ -79,7 +81,7 @@ class Connector:
             self._process_log_file(log_file)
             log_file = self.log_manager.get_next_log()
 
-        logging.info('Finished processing all new log files')
+        logging.info('Finished processing all new log files. Total logs processed: %s', self.total_processed)
 
     def _process_log_file(self, log_file: LogFile) -> None:
         """
@@ -101,6 +103,7 @@ class Connector:
             self.log_manager.update_last_log_files()
             self.event_handler.clear()
             logging.info('Processed log file: %s. Last line number: %d', log_file.filename_gz, log_file.last_processed_line)
+            self.total_processed += log_file.last_processed_line
             os.remove(log_file.local_path_txt)
 
     def _process_log_lines(self, log_file: LogFile, file):
