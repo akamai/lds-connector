@@ -18,7 +18,7 @@
 import json
 import logging
 import socket
-from typing import Any
+from typing import Any, List, Dict
 from urllib.parse import urljoin
 import time
 
@@ -138,7 +138,7 @@ class Splunk(Handler):
         self.log_queue.clear()
         self.dns_queue.clear()
 
-    def _publish(self, queue: list[dict[str, Any]], batch_size: int, token: str, force: bool):
+    def _publish(self, queue: List[Dict[str, Any]], batch_size: int, token: str, force: bool):
         logging.debug('Publishing events to Splunk')
 
         if len(queue) == 0:

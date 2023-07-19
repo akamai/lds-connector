@@ -17,7 +17,7 @@
 
 import logging
 import time
-from typing import Optional
+from typing import Optional, List
 
 import requests
 from akamai.edgegrid import EdgeGridAuth
@@ -43,7 +43,7 @@ class EdgeDnsManager():
 
         self.config = config
 
-    def get_records(self) -> list[DnsRecord]:
+    def get_records(self) -> List[DnsRecord]:
         assert self.config.edgedns is not None
         assert self.config.open is not None
 
@@ -78,7 +78,7 @@ class EdgeDnsManager():
 
         return record_set
 
-    def _parse_records(self, json_response) -> list[DnsRecord]:
+    def _parse_records(self, json_response) -> List[DnsRecord]:
         assert self.config.edgedns is not None
         assert self.config.edgedns.zone_name is not None
 
