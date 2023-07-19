@@ -16,6 +16,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass
@@ -25,4 +26,4 @@ class DnsRecord:
     name: str
     type: str
     ttl_sec: int
-    rdata: list[str]
+    rdata: List[str]

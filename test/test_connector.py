@@ -22,6 +22,7 @@ import unittest
 from os import path
 from test import test_data, test_util
 from unittest.mock import MagicMock
+from typing import List
 
 from lds_connector.connector import Connector, build_connector
 from lds_connector.splunk import Splunk

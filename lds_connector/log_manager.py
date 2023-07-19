@@ -23,7 +23,7 @@ import shutil
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from gzip import GzipFile
-from typing import Optional
+from typing import Optional, List
 
 import parse
 from akamai.netstorage import Netstorage
@@ -53,7 +53,7 @@ class LogManager:
             ssl=self.config.lds.ns.use_ssl
         )
 
-        self.asc_log_files_cache: list[LogFile] = []
+        self.asc_log_files_cache: List[LogFile] = []
 
         self.resume_data_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_DATA_PICKLE_FILE_NAME) 
 
@@ -160,7 +160,7 @@ class LogManager:
         return next_log_file
 
 
-    def _list(self) -> list[LogFile]:
+    def _list(self) -> List[LogFile]:
         """
         List available log file in NetStorage.
 
@@ -228,7 +228,7 @@ class LogManager:
         os.remove(log_file.local_path_gz)
 
     @staticmethod
-    def _parse_list_response(response_xml: str) -> list[LogFile]:
+    def _parse_list_response(response_xml: str) -> List[LogFile]:
         """
         Parse the NetStorage list API's XML response into a list of files 
 
@@ -236,7 +236,7 @@ class LogManager:
             response_xml (str): The NetStorage list API's XML response
 
         Returns:
-            list[LogFile]: The available log files
+            List[LogFile]: The available log files
         """
 
         root = ET.fromstring(response_xml)

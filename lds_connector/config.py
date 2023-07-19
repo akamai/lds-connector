@@ -19,8 +19,7 @@ import logging
 import os
 from dataclasses import dataclass
 from typing import Optional
-import enum
-
+from enum import Enum
 import yaml
 
 
@@ -41,26 +40,26 @@ class SplunkConfig:
     edgedns_hec: Optional[HecConfig]
 
 
-@dataclass
-class SysLogTlsConfig:
-    ca_file: str
-    verify: bool
-
-class SysLogTransport(enum.Enum):
+class SysLogTransport(Enum):
     UDP = 0
     TCP = 1
     TCP_TLS = 2
 
-class SysLogProtocol(enum.Enum):
+class SysLogProtocol(Enum):
     RFC3164 = 0
     RFC5424 = 1
 
-class SysLogDelimiter(enum.Enum):
+class SysLogDelimiter(Enum):
     NONE = 0
-    LF = 1
+    LF = 1,
     CRLF = 2
     NULL = 3
     OCTET = 4
+
+@dataclass
+class SysLogTlsConfig:
+    ca_file: str
+    verify: bool
 
 @dataclass
 class SysLogConfig:
