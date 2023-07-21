@@ -81,7 +81,8 @@ Add a NetStorage HTTP CMS API key.
 
 Click create!
 
-Great job! NetStorage is configured. It can take a few minutes for the upload account permissions to propagate.
+Great job! NetStorage is configured. It can take a few hours for the upload account permissions to propagate.
+You will see 403 errors when running the LDS Connector until these changes are propagated.
 
 Log Delivery Service Configuration
 ==================================

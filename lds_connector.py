@@ -49,9 +49,9 @@ def main():
 
     connector = Connector(config)
     scheduler = sched.scheduler(time.time, time.sleep)
-    scheduler.enter(delay=0,  priority=1, action=sched_process_log_files, argument=(scheduler, connector, config))
     if config.edgedns is not None and config.edgedns.send_records:
         scheduler.enter(delay=0,  priority=2, action=sched_process_dns_records, argument=(scheduler, connector, config))
+    scheduler.enter(delay=0,  priority=1, action=sched_process_log_files, argument=(scheduler, connector, config))
     scheduler.run()
 
 

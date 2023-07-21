@@ -15,8 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import itertools
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from os import path
 import socket
 import json
@@ -38,7 +39,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.lds_hec.event_batch_size = 1
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertTrue(splunk.publish_log_lines())
@@ -59,6 +60,39 @@ class SplunkTest(unittest.TestCase):
             events_json = expected_event
         )
 
+    @patch('lds_connector.splunk.requests')
+    def test_publish_logs_retry(self, mock_requests):
+        config = test_data.create_splunk_config()
+        assert config.splunk is not None
+        config.splunk.lds_hec.event_batch_size = 1
+
+        splunk = Splunk(config)
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_bad_response = MagicMock()
+        mock_bad_response.status_code = 404
+        mock_requests.post.side_effect = itertools.chain([ConnectionError(), mock_bad_response], itertools.repeat(mock_response))
+
+        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        self.assertTrue(splunk.publish_log_lines())
+
+        expected_url = 'http://127.0.0.1:8088/services/collector/event'
+        expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
+        expected_event = json.dumps({
+            'time': test_data.DNS_LOG_TIMESTAMPS[0],
+            'host': socket.gethostname(),
+            'source': 'lds-connector',
+            'event': test_data.DNS_LOG_LINES[0],
+            'sourcetype': config.splunk.lds_hec.source_type,
+            'index': config.splunk.lds_hec.index
+        })
+        mock_requests.post.assert_called_with(
+            expected_url,
+            headers=expected_headers,
+            data=expected_event,
+            timeout=Splunk._TIMEOUT_SEC
+        )
+
     def test_publish_records(self):
         config = test_data.create_splunk_config()
         assert config.splunk is not None
@@ -66,7 +100,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.edgedns_hec.event_batch_size = 1
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         dns_record = test_data.create_dns_record1()
 
@@ -92,7 +126,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.lds_hec.event_batch_size = 1
         
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertTrue(splunk.publish_log_lines())
@@ -120,7 +154,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.edgedns_hec.event_batch_size = 1
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         dns_record = test_data.create_dns_record1()
 
@@ -144,7 +178,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.lds_hec.event_batch_size = 1
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         self.assertFalse(splunk.publish_log_lines())
 
@@ -157,7 +191,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.edgedns_hec.event_batch_size = 1
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         self.assertFalse(splunk.publish_dns_records())
 
@@ -169,7 +203,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.lds_hec.event_batch_size = 3
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertFalse(splunk.publish_log_lines())
@@ -186,7 +220,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.edgedns_hec.event_batch_size = 3
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         dns_record = test_data.create_dns_record1()
 
@@ -204,7 +238,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.lds_hec.event_batch_size = 3
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertFalse(splunk.publish_log_lines())
@@ -239,7 +273,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.edgedns_hec.event_batch_size = 3
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         dns_record1 = test_data.create_dns_record1()
         dns_record2 = test_data.create_dns_record2()
@@ -275,7 +309,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.lds_hec.event_batch_size = 3
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
         self.assertFalse(splunk.publish_log_lines())
@@ -307,7 +341,7 @@ class SplunkTest(unittest.TestCase):
         config.splunk.edgedns_hec.event_batch_size = 3
 
         splunk = Splunk(config)
-        splunk._post = MagicMock()
+        splunk._post = MagicMock(return_value=True)
 
         dns_record1 = test_data.create_dns_record1()
         dns_record2 = test_data.create_dns_record2()
