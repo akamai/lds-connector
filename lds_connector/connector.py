@@ -35,18 +35,19 @@ class Connector:
     Connector script entry-point
     """
 
-    def __init__(self, config: Config):
+    def __init__(
+            self,
+            config: Config,
+            log_manager: LogManager,
+            edgedns: Optional[EdgeDnsManager],
+            event_handler: Handler
+    ):
         self.config = config
-        self.log_manager: LogManager = LogManager(config)
-        self.edgedns: Optional[EdgeDnsManager] = create_edgedns_manager(config)
-        self.event_handler: Handler
+        self.log_manager: LogManager = log_manager
+        self.edgedns: Optional[EdgeDnsManager] = edgedns
+        self.event_handler: Handler = event_handler
         self.total_processed = 0
 
-        if config.splunk is not None:
-            self.event_handler = Splunk(config)
-        if config.syslog is not None:
-            self.event_handler = SysLog(config)
-        assert self.event_handler is not None
 
     def process_dns_records(self) -> None:
         """
@@ -108,20 +109,18 @@ class Connector:
 
     def _process_log_lines(self, log_file: LogFile, file):
         log_line = file.readline()
-        line_number = 0
+        line_number = 1
 
         # Skip lines that have already been processed
         while line_number <= log_file.last_processed_line:
-            line_number += 1
-
             log_line = file.readline()
+            line_number += 1
 
         while log_line:
-            line_number += 1
-
             log_event = self._create_log_event(log_line)
             if not log_event:
                 log_line = file.readline()
+                line_number += 1
                 continue
                 
             self.event_handler.add_log_line(log_event)
@@ -129,14 +128,15 @@ class Connector:
                 log_file.last_processed_line = line_number
 
             log_line = file.readline()
+            line_number += 1
 
         # Publish remaining log lines
         if self.event_handler.publish_log_lines(force=True):
-            log_file.last_processed_line = line_number
+            log_file.last_processed_line = line_number - 1
         log_file.processed = True
 
     def _create_log_event(self, log_line: str) -> Optional[LogEvent]:
-        if not log_line[-1] == '\n':
+        if log_line[-1] == '\n':
             log_line = log_line[:-1]
 
         try:
@@ -172,3 +172,19 @@ class Connector:
         timestamp_datetime = datetime.strptime(timestamp_substr, self.config.lds.timestamp_strptime)
         timestamp_datetime = timestamp_datetime.replace(tzinfo=timezone.utc)
         return timestamp_datetime
+
+@staticmethod
+def build_connector(config: Config) -> Connector:
+    event_handler = None
+    if config.splunk is not None:
+        event_handler = Splunk(config)
+    if config.syslog is not None:
+        event_handler = SysLog(config)
+    assert event_handler is not None
+
+    return Connector(
+        config=config,
+        log_manager=LogManager(config),
+        edgedns=create_edgedns_manager(config),
+        event_handler=event_handler
+    )

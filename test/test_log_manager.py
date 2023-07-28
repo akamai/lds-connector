@@ -19,7 +19,7 @@ import os
 import shutil
 import unittest
 from os import path
-from test import test_data
+from test import test_data, test_util
 from unittest.mock import MagicMock
 import pickle
 
@@ -230,7 +230,7 @@ class LogManagerTest(unittest.TestCase):
 
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file = log_manager.get_next_log()
 
@@ -255,7 +255,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3(), test_data.get_ns_file5()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file = log_manager.get_next_log()
         expected_log_file = test_data.get_ns_file1()
@@ -291,7 +291,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
@@ -315,7 +315,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file1 = log_manager.get_next_log()
         log_file2 = log_manager.get_next_log()
@@ -332,7 +332,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file3 = log_manager.get_next_log()
         assert log_file3 is not None
@@ -365,7 +365,7 @@ class LogManagerTest(unittest.TestCase):
         resume_file = test_data.get_ns_file1()
         resume_file.processed = False
         resume_file.last_processed_line = 2
-        test_data.download_file(resume_file)
+        test_util.download_file(resume_file)
         LogManager._uncompress(resume_file)
         with open(test_data.RESUME_DATA_PATH, 'wb') as file:
             pickle.dump({'cam': resume_file}, file)
@@ -375,7 +375,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file = log_manager.get_next_log()
 
@@ -399,7 +399,7 @@ class LogManagerTest(unittest.TestCase):
 
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file = log_manager.get_next_log()
 

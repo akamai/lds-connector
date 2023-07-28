@@ -36,15 +36,13 @@ class SysLogTest(unittest.TestCase):
     EXPECTED_TIMES_RFC3164 = [
         'Jan 03 03:06:39',
         'Jan 03 03:06:39',
-        'Jan 03 03:06:39',
-        'Jan 03 02:44:43'
+        'Jan 03 03:36:36',
     ]
 
     EXPECTED_TIMES_RFC5424 = [
         '2023-01-03T03:06:39Z',
         '2023-01-03T03:06:39Z',
-        '2023-01-03T03:06:39Z',
-        '2023-01-03T02:44:43Z'
+        '2023-01-03T03:36:36Z',
     ]
 
 
@@ -55,10 +53,11 @@ class SysLogTest(unittest.TestCase):
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+        syslog_handler.add_log_line(log_event)
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
+        expected_message = SysLogTest.create_rfc3164_log(config, log_event, SysLogTest.EXPECTED_TIMES_RFC3164[0])
         assert config.syslog is not None
         mock_socket_inst.sendto.assert_called_once_with(expected_message, (config.syslog.host, config.syslog.port))
 
@@ -90,10 +89,11 @@ class SysLogTest(unittest.TestCase):
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+        syslog_handler.add_log_line(log_event)
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
+        expected_message = SysLogTest.create_rfc3164_log(config, log_event, SysLogTest.EXPECTED_TIMES_RFC3164[0])
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
 
@@ -111,10 +111,11 @@ class SysLogTest(unittest.TestCase):
             mock_socket.return_value = mock_socket_inst
             syslog_handler = SysLog(config)
 
-            syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+            log_event = test_data.get_dns_log_events()[0]
+            syslog_handler.add_log_line(log_event)
             syslog_handler.publish_log_lines()
 
-            expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0], delim)
+            expected_message = SysLogTest.create_rfc3164_log(config, log_event, SysLogTest.EXPECTED_TIMES_RFC3164[0], delim)
             mock_socket_inst.connect.assert_called_once()
             mock_socket_inst.sendall.assert_called_once_with(expected_message)
 
@@ -131,10 +132,11 @@ class SysLogTest(unittest.TestCase):
         mock_socket.return_value = mock_socket_inst
         syslog_handler = SysLog(config)
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+        syslog_handler.add_log_line(log_event)
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_rfc5424_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC5424[0])
+        expected_message = SysLogTest.create_rfc5424_log(config, log_event, SysLogTest.EXPECTED_TIMES_RFC5424[0])
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
 
@@ -155,10 +157,11 @@ class SysLogTest(unittest.TestCase):
         mock_wrap_socket.side_effect = lambda socket: socket
         syslog_handler = SysLog(config)
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+        syslog_handler.add_log_line(log_event)
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
+        expected_message = SysLogTest.create_rfc3164_log(config, log_event, SysLogTest.EXPECTED_TIMES_RFC3164[0])
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
         mock_wrap_socket.assert_called_once()
@@ -180,10 +183,11 @@ class SysLogTest(unittest.TestCase):
         mock_wrap_socket.side_effect = lambda socket, server_hostname: socket
         syslog_handler = SysLog(config)
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+        syslog_handler.add_log_line(log_event)
         syslog_handler.publish_log_lines()
 
-        expected_message = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
+        expected_message = SysLogTest.create_rfc3164_log(config, log_event, SysLogTest.EXPECTED_TIMES_RFC3164[0])
         mock_socket_inst.connect.assert_called_once()
         mock_socket_inst.sendall.assert_called_once_with(expected_message)
         mock_wrap_socket.assert_called_once()
@@ -237,15 +241,16 @@ class SysLogTest(unittest.TestCase):
         mock_socket.return_value = mock_socket_inst
 
         syslog_handler = SysLog(config)
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[1])
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[2])
+        log_events = test_data.get_dns_log_events()
+        syslog_handler.add_log_line(log_events[0])
+        syslog_handler.add_log_line(log_events[1])
+        syslog_handler.add_log_line(log_events[2])
         syslog_handler.publish_log_lines()
 
         assert config.syslog is not None
-        expected_message1 = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
-        expected_message2 = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[1], SysLogTest.EXPECTED_TIMES_RFC3164[1])
-        expected_message3 = SysLogTest.create_rfc3164_log(config, test_data.DNS_LOG_EVENTS[2], SysLogTest.EXPECTED_TIMES_RFC3164[2])
+        expected_message1 = SysLogTest.create_rfc3164_log(config, log_events[0], SysLogTest.EXPECTED_TIMES_RFC3164[0])
+        expected_message2 = SysLogTest.create_rfc3164_log(config, log_events[1], SysLogTest.EXPECTED_TIMES_RFC3164[1])
+        expected_message3 = SysLogTest.create_rfc3164_log(config, log_events[2], SysLogTest.EXPECTED_TIMES_RFC3164[2])
         self.assertEqual(mock_socket_inst.sendto.call_count, 3)
         mock_socket_inst.sendto.assert_has_calls([
             call(expected_message1, (config.syslog.host, config.syslog.port)),
@@ -285,8 +290,9 @@ class SysLogTest(unittest.TestCase):
         syslog_handler = SysLog(config)
         syslog_handler.syslogger = MagicMock()
 
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[0])
-        syslog_handler.add_log_line(test_data.DNS_LOG_EVENTS[1])
+        log_events = test_data.get_dns_log_events()
+        syslog_handler.add_log_line(log_events[0])
+        syslog_handler.add_log_line(log_events[1])
         syslog_handler.clear()
         syslog_handler.publish_log_lines()
 

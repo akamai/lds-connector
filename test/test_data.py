@@ -17,14 +17,15 @@
 
 import os
 from os import path
-import shutil
-import json
 from datetime import datetime, timezone
+from typing import List
 
 from lds_connector.config import *
 from lds_connector.log_manager import LogFile, LogNameProps, LogManager
 from lds_connector.edgedns_manager import DnsRecord
 from lds_connector.log_file import LogEvent
+
+from test import test_util
 
 
 DATA_DIR = path.join(path.dirname(__file__), 'data')
@@ -38,21 +39,22 @@ NS_LIST_RESPONSE = """<?xml version="1.0" encoding="ISO-8859-1"?>
     <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-1.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
 </list>"""
 
-DNS_LOG_LINES = [
-    '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,52149,edgedns.zone,IN,CAA,E,4096,D,,300:0 issue "ca.sectigo.com" 300:0 issue "ca.digicert.com" SIGNx1 ',
-    '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,64062,2ww-nigiro.edgedns.zone,IN,A,E,4096,D,,3:NXDOMAIN ',
-    '416458 - 1672715199 03/01/2023 03:06:39,52.37.159.152,43215,edgedns.zone,IN,NS,E,4096,D,,86400:a13-67.akam.net 86400:a11-66.akam.net 86400:a22-64.akam.net 86400:a24-65.akam.net 86400:a28-66.akam.net 86400:a1-247.akam.net SIGNx1 ',
-    '416458 - 1672713883 03/01/2023 02:44:43,2600:1406:1a00:2::687d:da8c,44473,edgedns.zone,IN,SOA,,,,,86400:a1-247.akam.net hostmaster.edgedns.zone 2019102599 3600 600 604800 300 '
-]
+DNS_LOG_EVENTS_PATH = 'test_log_events.json'
+def get_dns_log_events() -> List[LogEvent]:
+    log_events: List[LogEvent]= []
+    log_events_json = test_util.read_json(DNS_LOG_EVENTS_PATH)
+    for log_event_json in log_events_json['log_events']:
+        log_events.append(LogEvent(
+            timestamp=datetime.fromtimestamp(log_event_json['timestamp'], timezone.utc),
+            log_line=log_event_json['log_line']
+        ))
 
-DNS_LOG_TIMESTAMPS = [1672715199.0, 1672715199.0, 1672715199.0, 1672713883.0]
+    return log_events
 
-DNS_LOG_EVENTS = [
-    LogEvent(DNS_LOG_LINES[0], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[0]).astimezone(timezone.utc)),
-    LogEvent(DNS_LOG_LINES[1], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[1]).astimezone(timezone.utc)),
-    LogEvent(DNS_LOG_LINES[2], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[2]).astimezone(timezone.utc)),
-    LogEvent(DNS_LOG_LINES[3], datetime.fromtimestamp(DNS_LOG_TIMESTAMPS[3]).astimezone(timezone.utc))
-]
+def get_dns_log_lines() -> List[str]:
+    log_events: List[LogEvent] = get_dns_log_events()
+    return map(lambda le: le.log_line, log_events)
+
 
 CA_FILE = path.join(DATA_DIR, 'ca.pem')
 
@@ -270,32 +272,3 @@ def create_dns_record3():
         rdata=['192.0.2.2']
     )
 
-
-def read_json(filename: str):
-    json_path = path.join(path.dirname(__file__), 'data/', filename)
-    json_data = {}
-    with open(json_path, 'r', encoding='utf-8') as json_file:
-        json_data = json.load(json_file)
-
-    return json_data
-
-
-def download_file(log_file: LogFile):
-    """
-    Mock method of downloading a file
-
-    The desired log file is assumed to exist in data/ directory. 
-    It's copied into the tmp/ download directory.
-    This allows unit testing the Gzip deletion.
-    """
-    source_path: str = path.join(DATA_DIR, log_file.filename_gz)
-    dest_path: str = path.join(TEMP_DIR, log_file.filename_gz)
-    shutil.copyfile(source_path, dest_path)
-
-    log_file.local_path_gz = dest_path
-
-
-def download_uncompress_file(log_file: LogFile):
-    download_file(log_file)
-    LogManager._uncompress(log_file)
-    os.remove(log_file.local_path_gz)
