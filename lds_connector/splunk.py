@@ -160,7 +160,7 @@ class Splunk(Handler):
         queue.clear()
         logging.debug('Published events to Splunk')
         return True
-    
+
     def _post_retry(self, url, headers, events_json) -> None:
         while not self._post(url=url, headers=headers, events_json=events_json):
             logging.info('Splunk call failed. Retrying...')
@@ -173,9 +173,6 @@ class Splunk(Handler):
                 logging.error('Splunk HEC responded with [%s]', response.status_code)
                 return False
             return True
-        except Exception as e: 
-            logging.error('Splunk HEC exception [%s]', e)
+        except Exception as exception:
+            logging.error('Splunk HEC exception [%s]', exception)
             return False
-
-
-            

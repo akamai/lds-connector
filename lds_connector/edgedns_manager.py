@@ -86,14 +86,14 @@ class EdgeDnsManager():
         time_fetched_sec = time.time()
         try:
             for json_record in json_response['recordsets']:
-                    records.append(DnsRecord(
-                        zone=self.config.edgedns.zone_name,
-                        time_fetched_sec=time_fetched_sec,
-                        name=json_record['name'],
-                        type=json_record['type'],
-                        ttl_sec=json_record['ttl'],
-                        rdata=json_record['rdata']
-                    ))
+                records.append(DnsRecord(
+                    zone=self.config.edgedns.zone_name,
+                    time_fetched_sec=time_fetched_sec,
+                    name=json_record['name'],
+                    type=json_record['type'],
+                    ttl_sec=json_record['ttl'],
+                    rdata=json_record['rdata']
+                ))
         except (KeyError, TypeError) as key_error:
             logging.warning('Edge DNS API returned record missing key [%s]: [%s]', key_error, json_response)
 

@@ -55,7 +55,7 @@ class LogManager:
 
         self.asc_log_files_cache: List[LogFile] = []
 
-        self.resume_data_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_DATA_PICKLE_FILE_NAME) 
+        self.resume_data_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_DATA_PICKLE_FILE_NAME)
 
         if os.path.isfile(self.resume_data_path):
             with open(self.resume_data_path, 'rb') as file:
@@ -69,7 +69,7 @@ class LogManager:
         Returns: None
         """
         assert self.current_log_file is not None
-        
+
         self.last_log_files_by_zone[self.current_log_file.name_props.customer_id] = self.current_log_file
 
         logging.debug('Saving resume data: %s', self.current_log_file)
@@ -309,7 +309,7 @@ class LogManager:
             part=parse_result['part'],
             encoding=parse_result['encoding']
         )
-    
+
     @staticmethod
     def _ensure_dir_exists(path: str):
         if not os.path.isdir(path):
