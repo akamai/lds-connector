@@ -19,7 +19,7 @@ import json
 import logging
 from datetime import datetime, timezone
 
-from .config import *
+from .config import Config, SysLogProtocol, SysLogTransport, SysLogDelimiter
 from .dns_record import DnsRecord
 from .handler import Handler
 from .json import CustomJsonEncoder
@@ -70,7 +70,8 @@ class SysLog(Handler):
         elif config.syslog.delimiter_method == SysLogDelimiter.OCTET:
             delimiter_method = SysLogger.DELIM_OCTET
         else:
-            assert False, 'Unexpected state. Syslog delimiter method was unknown: ' + str(config.syslog.delimiter_method)
+            assert False, 'Unexpected state. Syslog delimiter method was unknown: ' \
+                + str(config.syslog.delimiter_method)
 
         self.syslogger = SysLogger(
             transport=transport,

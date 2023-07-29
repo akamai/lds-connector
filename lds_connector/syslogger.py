@@ -156,7 +156,7 @@ class SysLogger:
         socktype = socket.SOCK_DGRAM
         if self.transport == SysLogger.TRANSPORT_UDP:
             socktype = socket.SOCK_DGRAM
-        elif self.transport == SysLogger.TRANSPORT_TCP or self.transport == SysLogger.TRANSPORT_TCP_TLS:
+        elif self.transport in (SysLogger.TRANSPORT_TCP, SysLogger.TRANSPORT_TCP_TLS):
             socktype = socket.SOCK_STREAM
 
         host, port = self.address
@@ -198,7 +198,7 @@ class SysLogger:
         pri_str = self._encode_prio(record.severity)
         timestamp_str = record.time.strftime(SysLogger._SYSLOG_RFC3164_TIME_FORMAT)
         return f'<{pri_str}>{timestamp_str} {record.hostname} {record.app_name}: {record.message}'
-    
+
 
     def _format_rfc5424(self, record: SysLogRecord) -> str:
         pri_str = self._encode_prio(record.severity)

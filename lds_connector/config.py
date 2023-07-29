@@ -20,6 +20,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 from enum import Enum
+import sys
 import yaml
 
 
@@ -51,7 +52,7 @@ class SysLogProtocol(Enum):
 
 class SysLogDelimiter(Enum):
     NONE = 0
-    LF = 1,
+    LF = 1
     CRLF = 2
     NULL = 3
     OCTET = 4
@@ -205,19 +206,20 @@ def _get_syslog_transport(syslog_yaml) -> SysLogTransport:
     transport_str = syslog_yaml.get(_KEY_SYSLOG_TRANSPORT, None)
 
     if transport_str is None:
-        logging.warning('Config parameter "syslog.transport" was not specified. Falling back to deprecated "syslog.use_tcp". The program will sill work as expected.')
+        logging.warning(
+            'Config parameter "syslog.transport" was not specified. Falling back to deprecated "syslog.use_tcp".' + 
+            'The program will sill work as expected.')
         if syslog_yaml[_KEY_SYSLOG_USE_TCP]:
             return SysLogTransport.TCP
-        else:
-            return SysLogTransport.UDP
-        
+        return SysLogTransport.UDP
+
     transport = getattr(SysLogTransport, transport_str, None)
     if transport is None:
         logging.error('Invalid config. Syslog transport is not supported. %s', transport_str)
-        exit(1)
+        sys.exit(1)
 
     return transport
-    
+
 
 
 def read_yaml_config(yaml_stream) -> Optional[Config]:
@@ -276,7 +278,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
                 edgedns_hec=None
             )
 
-            # Splunk Edge DNS HEC Config 
+            # Splunk Edge DNS HEC Config
             splunk_edgedns_yaml = splunk_yaml.get(_KEY_SPLUNK_HEC_EDGEDNS)
             if splunk_edgedns_yaml is not None:
                 splunk_config.edgedns_hec = HecConfig(
@@ -348,4 +350,3 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
     except KeyError as key_error:
         logging.error('Configuration file missing key %s', key_error.args[0])
         return None
-
