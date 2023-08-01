@@ -178,9 +178,17 @@ class LogManager:
         if response is None or response.status_code != 200:
             logging.error('Failed listing NetStorage files. %s', response.reason if response is not None else "")
             return []
-        logs = LogManager._parse_list_response(response.text)
+        logs: List[LogFile] = LogManager._parse_list_response(response.text)
+
+        filtered_logs = []
+        for log in logs:
+            if log.ns_path_gz.startswith(ls_path):
+                filtered_logs.append(log)
+            else:
+                logging.debug('NetStorage returned log file outside requested directory: %s', log.ns_path_gz)
+
         logging.debug('Fetched available log files list from NetStorage')
-        return logs
+        return filtered_logs
 
     def _download(self, log_file: LogFile) -> None:
         """

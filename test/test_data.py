@@ -97,7 +97,7 @@ def create_splunk_config():
                 cp_code=123456,
                 key="test_key",
                 use_ssl=True,
-                log_dir='logs1'
+                log_dir='cam/logs/'
             ),
             log_download_dir=os.path.abspath('logs2'),
             timestamp_parse='{} - {} {timestamp},{}',

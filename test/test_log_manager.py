@@ -242,7 +242,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(expected_log_file.local_path_txt))
         self.assertFalse(os.path.isfile(expected_log_file.local_path_gz))
 
-    def test_get_next_log_multiple_zones(self): 
+    def test_get_next_log_multiple_zones(self):
         """
         If there are multiple zones with the same timestamp,
         Then the log manager returns the log files chronologically
@@ -274,7 +274,7 @@ class LogManagerTest(unittest.TestCase):
         LogManagerTest.set_log_file_paths(expected_log_file)
         self.assertEqual(log_file, expected_log_file)
         log_file.processed = True
-        
+
         log_file = log_manager.get_next_log()
         expected_log_file = test_data.get_ns_file3()
         LogManagerTest.set_log_file_paths(expected_log_file)
@@ -296,7 +296,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
-        
+
         log_manager._list = MagicMock(return_value = [])
         self.assertIsNone(log_manager.get_next_log())
 
@@ -412,6 +412,33 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(log_file, expected_log_file)
         self.assertTrue(os.path.isfile(log_file.local_path_txt))
         self.assertFalse(os.path.isfile(log_file.local_path_gz))
+
+    def test_parse_list_response_ignore_outside_files(self):
+        """
+        If the NetStorage list API contains files outside of the requested directory
+        Then the log manager will ignore those files.
+        """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response_text = """<?xml version="1.0" encoding="ISO-8859-1"?>
+        <list>
+            <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030300-0400-0.gz" size="1234" md5="098f6bcd4621d373cade4e832627b4f6"/>
+            <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="2345" md5="5d41402abc4b2a76b9719d911017c592"/>
+            <file type="file" name="123456/other/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
+            <file type="file" name="123456/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
+            <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-1.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
+        </list>"""
+        mock_response.text = mock_response_text
+
+        config = test_data.create_splunk_config()
+        log_manager = LogManager(config)
+
+        log_manager.netstorage = MagicMock()
+        log_manager.netstorage.list = MagicMock(return_value=(True, mock_response))
+
+        actual_log_files = log_manager._list()
+        self.assertEqual(len(actual_log_files), 3)
+        self.assertEqual(actual_log_files, [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
 
 if __name__ == '__main__':
