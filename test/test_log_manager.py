@@ -78,7 +78,7 @@ class LogManagerTest(unittest.TestCase):
         If the NetStorage list API XML response is valid
         Then the log manager parses out the log file metadata for each
         """
-        log_files = LogManager._parse_list_response(test_data.NS_LIST_RESPONSE)
+        log_files = LogManager._parse_list_response('/123456/cam/logs', test_data.NS_LIST_RESPONSE)
 
         self.assertEqual(log_files, [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
@@ -113,7 +113,7 @@ class LogManagerTest(unittest.TestCase):
             last_processed_line=-1
         )
 
-        log_files = LogManager._parse_list_response(list_response_xml)
+        log_files = LogManager._parse_list_response('/123456/cam/logs', list_response_xml)
 
         self.assertEqual(log_files, [file2])
 
@@ -425,6 +425,7 @@ class LogManagerTest(unittest.TestCase):
             <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030300-0400-0.gz" size="1234" md5="098f6bcd4621d373cade4e832627b4f6"/>
             <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="2345" md5="5d41402abc4b2a76b9719d911017c592"/>
             <file type="file" name="123456/other/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
+            <file type="file" name="123456/cat_wearing_a_silly_hat.png" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
             <file type="file" name="123456/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
             <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-1.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
         </list>"""
