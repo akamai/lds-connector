@@ -36,7 +36,7 @@ lds :
     cp_code : 123456
     key : 'test_key'
     use_ssl : true
-    log_dir : 'logs1'
+    log_dir : 'cam/logs/'
   log_download_dir : 'logs2'
   timestamp_parse: '{} - {} {timestamp},{}'
   timestamp_strptime: '%d/%m/%Y %H:%M:%S'
