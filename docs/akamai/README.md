@@ -155,7 +155,7 @@ lds :
 ```
 
 The timestamp fields are used to extract a timestamp from each log line. This extracted timestamp is used as the Splunk
-event timestamp. This ensure each log event is index by when it was emitted, rather than when it was sent to Splunk.
+event timestamp. This ensures each log event is index by when it was emitted, rather than when it was sent to Splunk.
 
 
 # Edge DNS Record Configuration (Optional)

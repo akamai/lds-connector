@@ -128,6 +128,9 @@ Below are the Splunk YAML configuration options.
 - `splunk.hec_use_ssl`:
    - Required: Yes
    - Whether to use SSL when sending events to the HTTP Event Collector
+- `splunk.hec_ssl_verify`:
+   - Required: No, default is true
+   - Whether to use SSL verification or not when posting events to Splunk
 - `splunk.lds_hec.token`: 
    - Required: Yes
    - The HTTP Event Collector's token
@@ -150,6 +153,7 @@ splunk :
   host : '127.0.0.1'
   hec_port : 8088
   hec_use_ssl : true 
+  hec_ssl_verify : false
   lds_hec :
     token : '8e1ea35b-9904-47df-94af-442b415b90b6'
     source_type: 'lds_log_dns'
