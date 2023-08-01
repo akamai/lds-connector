@@ -64,6 +64,7 @@ def create_splunk_config():
             host="127.0.0.1",
             hec_port=8088,
             hec_use_ssl=False,
+            hec_ssl_verify=True,
             lds_hec=HecConfig(
                 source_type='lds_log_dns',
                 index='sandbox',
