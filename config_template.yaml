@@ -4,6 +4,7 @@ splunk : # Optional. Splunk delivery config. Delete if using Wazuh/Syslog delive
   host : '127.0.0.1'            # Splunk deployment's host name / IP
   hec_port : 8088               # HEC port
   hec_use_ssl : false           # HEC use SSL
+  hec_ssl_verify : false        # Optional. Default true. HEC SSL verify flag
   lds_hec :
     token : ''                    # HEC token for LogDeliveryService logs
     source_type: 'lds_log_dns'    # Optional. Override HEC token default source type 
