@@ -90,15 +90,13 @@ class LogManager:
         Returns:
             Optional[LogFile]: The log file to process next, if any.
         """
-        logging.info('Getting next log file')
-
         if self.current_log_file is not None:
             # Normal run
             self.update_last_log_files()
 
         next_log_file = self._determine_next_log()
         if not next_log_file:
-            logging.info('No log files to process')
+            logging.info('No new log files found')
             return None
 
         self._download(next_log_file)

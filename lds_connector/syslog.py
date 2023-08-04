@@ -17,16 +17,14 @@
 
 import json
 import logging
-import socket
-from logging.handlers import SysLogHandler
-from typing import Dict
 from datetime import datetime, timezone
 
-from .config import Config
+from .config import *
 from .dns_record import DnsRecord
 from .handler import Handler
 from .json import CustomJsonEncoder
 from .log_file import LogEvent
+from .syslogger import SysLogger
 
 
 class SysLog(Handler):
@@ -34,26 +32,57 @@ class SysLog(Handler):
     _ARG_LOG_TIME = 'log_time'
     _TIME_FORMAT = '%b %d %H:%M:%S'
 
+
     def __init__(self, config: Config):
         assert config.syslog is not None
 
-        self.config = config
+        self.config: Config = config
         self.log_queue: list[LogEvent] = []
         self.dns_queue: list[str] = []
 
-        self.syslogger = logging.getLogger('SysLogger')
-        self.syslogger.propagate = False
-        self.syslogger.setLevel(logging.INFO)
-        handler = SysLogHandler(
-            facility=SysLogHandler.LOG_USER,
+        protocol = None
+        if config.syslog.protocol == SysLogProtocol.RFC3164:
+            protocol = SysLogger.PROTOCOL_RFC3164
+        elif config.syslog.protocol == SysLogProtocol.RFC5424:
+            protocol = SysLogger.PROTOCOL_RFC5424
+        else:
+            assert False, 'Unexpected state. Syslog protocol was unknown ' + str(config.syslog.protocol)
+
+        transport = None
+        if config.syslog.transport == SysLogTransport.UDP:
+            transport = SysLogger.TRANSPORT_UDP
+        elif config.syslog.transport == SysLogTransport.TCP:
+            transport = SysLogger.TRANSPORT_TCP
+        elif config.syslog.transport == SysLogTransport.TCP_TLS:
+            transport = SysLogger.TRANSPORT_TCP_TLS
+        else:
+            assert False, 'Unexpected state. Syslog transport was unknown: ' + str(config.syslog.transport)
+
+        delimiter_method = SysLogger.DELIM_NONE
+        if config.syslog.delimiter_method == SysLogDelimiter.NONE:
+            delimiter_method = SysLogger.DELIM_NONE
+        elif config.syslog.delimiter_method == SysLogDelimiter.LF:
+            delimiter_method = SysLogger.DELIM_LF
+        elif config.syslog.delimiter_method == SysLogDelimiter.CRLF:
+            delimiter_method = SysLogger.DELIM_CRLF
+        elif config.syslog.delimiter_method == SysLogDelimiter.NULL:
+            delimiter_method = SysLogger.DELIM_NULL
+        elif config.syslog.delimiter_method == SysLogDelimiter.OCTET:
+            delimiter_method = SysLogger.DELIM_OCTET
+        else:
+            assert False, 'Unexpected state. Syslog delimiter method was unknown: ' + str(config.syslog.delimiter_method)
+
+        self.syslogger = SysLogger(
+            transport=transport,
             address=(config.syslog.host, config.syslog.port),
-            socktype=socket.SOCK_STREAM if config.syslog.use_tcp else socket.SOCK_DGRAM
+            protocol=protocol,
+            facility=SysLogger.FAC_USER,
+            delimiter_method=delimiter_method,
+            from_host = config.syslog.from_host,
+            tls_ca_file=None if config.syslog.tls is None else config.syslog.tls.ca_file,
+            tls_check_hostname = True if config.syslog.tls is None else config.syslog.tls.verify
         )
-        handler.append_nul = False
-        handler.setFormatter(logging.Formatter(
-            f'%({SysLog._ARG_LOG_TIME})s {socket.gethostname()} %({SysLog._ARG_APP_NAME})s: %(message)s'
-        ))
-        self.syslogger.addHandler(handler)
+
 
     def add_log_line(self, log_event: LogEvent) -> None:
         """
@@ -65,6 +94,7 @@ class SysLog(Handler):
         Returns: None
         """
         self.log_queue.append(log_event)
+
 
     def add_dns_record(self, dns_record: DnsRecord) -> None:
         """
@@ -95,15 +125,12 @@ class SysLog(Handler):
         logging.debug('Publishing log lines to SysLog server')
         assert self.config.syslog is not None
         for log_event in self.log_queue:
-            extra_args = {
-                SysLog._ARG_APP_NAME: self.config.syslog.lds_app_name,
-                SysLog._ARG_LOG_TIME: log_event.timestamp.strftime(SysLog._TIME_FORMAT)
-            }
-            self.syslogger.info(log_event.log_line, extra=extra_args)
+            self.syslogger.log_info(self.config.syslog.lds_app_name, log_event.timestamp, log_event.log_line)
 
         self.log_queue.clear()
         logging.debug('Published log lines to SysLog server')
         return True
+
 
     def publish_dns_records(self, force=False) -> bool:
         """
@@ -120,16 +147,14 @@ class SysLog(Handler):
 
         logging.debug('Publishing DNS records to SysLog server')
         assert self.config.syslog is not None
-        extra_args = {
-            SysLog._ARG_APP_NAME: self.config.syslog.edgedns_app_name,
-            SysLog._ARG_LOG_TIME: datetime.now(timezone.utc).strftime(SysLog._TIME_FORMAT)
-        }
+        assert self.config.syslog.edgedns_app_name is not None
         for dns_record in self.dns_queue:
-            self.syslogger.info(dns_record, extra=extra_args)
+            self.syslogger.log_info(self.config.syslog.edgedns_app_name, datetime.now(timezone.utc), dns_record)
 
         self.dns_queue.clear()
         logging.debug('Published DNS records to SysLog server')
         return True
+
 
     def clear(self):
         """
