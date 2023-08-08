@@ -18,7 +18,7 @@
 import json
 import logging
 import socket
-from typing import Any
+from typing import Any, List, Dict
 from urllib.parse import urljoin
 import time
 
@@ -138,7 +138,7 @@ class Splunk(Handler):
         self.log_queue.clear()
         self.dns_queue.clear()
 
-    def _publish(self, queue: list[dict[str, Any]], batch_size: int, token: str, force: bool):
+    def _publish(self, queue: List[Dict[str, Any]], batch_size: int, token: str, force: bool):
         logging.debug('Publishing events to Splunk')
 
         if len(queue) == 0:
@@ -160,7 +160,7 @@ class Splunk(Handler):
         queue.clear()
         logging.debug('Published events to Splunk')
         return True
-    
+
     def _post_retry(self, url, headers, events_json) -> None:
         while not self._post(url=url, headers=headers, events_json=events_json):
             logging.info('Splunk call failed. Retrying...')
@@ -173,9 +173,6 @@ class Splunk(Handler):
                 logging.error('Splunk HEC responded with [%s]', response.status_code)
                 return False
             return True
-        except Exception as e: 
-            logging.error('Splunk HEC exception [%s]', e)
+        except Exception as exception:
+            logging.error('Splunk HEC exception [%s]', exception)
             return False
-
-
-            

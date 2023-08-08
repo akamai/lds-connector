@@ -59,7 +59,6 @@ class Connector:
         logging.info('Processing DNS records')
 
         records = self.edgedns.get_records()
-        # TODO: get_records should return records page-by-page
 
         for record in records:
             self.event_handler.add_dns_record(record)
@@ -99,11 +98,16 @@ class Connector:
                 self._process_log_lines(log_file, file)
 
         except Exception as exception:
-            logging.error('An unexpected error has occurred processing log file. Ignoring and moving on [%s]', exception)
+            logging.error(
+                'An unexpected error has occurred processing log file. Ignoring and moving on [%s]',
+                exception)
         finally:
             self.log_manager.update_last_log_files()
             self.event_handler.clear()
-            logging.info('Processed log file: %s. Last line number: %d', log_file.filename_gz, log_file.last_processed_line)
+            logging.info(
+                'Processed log file: %s. Last line number: %d', 
+                log_file.filename_gz, 
+                log_file.last_processed_line)
             self.total_processed += log_file.last_processed_line
             os.remove(log_file.local_path_txt)
 
@@ -122,7 +126,7 @@ class Connector:
                 log_line = file.readline()
                 line_number += 1
                 continue
-                
+
             self.event_handler.add_log_line(log_event)
             if self.event_handler.publish_log_lines():
                 log_file.last_processed_line = line_number

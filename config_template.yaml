@@ -19,8 +19,8 @@ syslog : # SysLog delivery config. Delete if using Splunk delivery
   host : '127.0.0.1'                    # SysLog server host name / IP
   port: 513                             # SysLog server port
   protocol: 'RFC3164'                   # Optional. Default RFC3164. The Syslog protocol to use. 
-  transport: 'TCP'                      # Optional. Default UDP. The transport protocol to use. UDP, TCP, or TCP_TLS
-  use_tcp : true                        # Deprecated. Use protocol. Whether to use TCP or UDP. 
+  transport: 'TCP'                      # The transport protocol to use. UDP, TCP, or TCP_TLS
+  use_tcp : true                        # Deprecated. Used transport. Whether to use TCP or UDP. 
   lds_app_name : 'lds_dns_log'          # SysLog app name field for LDS messages
   edgedns_app_name : 'lds_dns_record'   # SysLog app name field for Edge DNS config messages
   delimiter_method: 'LF'                # Optional. Default LF. How to delimit syslog messages. LF, CRLF, NONE, NULL, OCTET

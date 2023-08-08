@@ -17,7 +17,7 @@
 
 import logging
 import time
-from typing import Optional
+from typing import Optional, List
 
 import requests
 from akamai.edgegrid import EdgeGridAuth
@@ -43,7 +43,7 @@ class EdgeDnsManager():
 
         self.config = config
 
-    def get_records(self) -> list[DnsRecord]:
+    def get_records(self) -> List[DnsRecord]:
         assert self.config.edgedns is not None
         assert self.config.open is not None
 
@@ -78,7 +78,7 @@ class EdgeDnsManager():
 
         return record_set
 
-    def _parse_records(self, json_response) -> list[DnsRecord]:
+    def _parse_records(self, json_response) -> List[DnsRecord]:
         assert self.config.edgedns is not None
         assert self.config.edgedns.zone_name is not None
 
@@ -86,14 +86,14 @@ class EdgeDnsManager():
         time_fetched_sec = time.time()
         try:
             for json_record in json_response['recordsets']:
-                    records.append(DnsRecord(
-                        zone=self.config.edgedns.zone_name,
-                        time_fetched_sec=time_fetched_sec,
-                        name=json_record['name'],
-                        type=json_record['type'],
-                        ttl_sec=json_record['ttl'],
-                        rdata=json_record['rdata']
-                    ))
+                records.append(DnsRecord(
+                    zone=self.config.edgedns.zone_name,
+                    time_fetched_sec=time_fetched_sec,
+                    name=json_record['name'],
+                    type=json_record['type'],
+                    ttl_sec=json_record['ttl'],
+                    rdata=json_record['rdata']
+                ))
         except (KeyError, TypeError) as key_error:
             logging.warning('Edge DNS API returned record missing key [%s]: [%s]', key_error, json_response)
 
