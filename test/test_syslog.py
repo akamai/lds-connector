@@ -21,6 +21,7 @@ import unittest
 from datetime import datetime, timezone
 from test import test_data
 from unittest.mock import MagicMock, call, patch
+import itertools
 
 from freezegun import freeze_time
 
@@ -297,6 +298,27 @@ class SysLogTest(unittest.TestCase):
         syslog_handler.publish_log_lines()
 
         syslog_handler.syslogger.log_info.assert_not_called()
+
+
+    @patch('lds_connector.syslogger.socket.socket')
+    @freeze_time(datetime.fromtimestamp(LOG_EMIT_TIME))
+    def test_publish_tcp_log_retry(self, mock_socket: MagicMock):
+        config = test_data.create_syslog_config()
+        assert config.syslog is not None
+        config.syslog.transport = SysLogTransport.TCP
+        mock_socket_inst = MagicMock()
+        mock_socket_inst.sendall.side_effect = itertools.chain([ConnectionError()], itertools.repeat(None))
+        mock_socket.return_value = mock_socket_inst
+        syslog_handler = SysLog(config)
+
+        log_event = test_data.get_dns_log_events()[0]
+        syslog_handler.add_log_line(log_event)
+        syslog_handler.publish_log_lines()
+
+        expected_message = SysLogTest.create_rfc3164_log(config, log_event, SysLogTest.EXPECTED_TIMES_RFC3164[0])
+        self.assertEqual(mock_socket_inst.connect.call_count, 2)
+        mock_socket_inst.sendall.assert_called_with(expected_message)
+        self.assertEqual(mock_socket_inst.sendall.call_count, 2)
 
 
     @staticmethod
