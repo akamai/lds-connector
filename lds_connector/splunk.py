@@ -168,7 +168,12 @@ class Splunk(Handler):
 
     def _post(self, url, headers, events_json) -> bool:
         try:
-            response = requests.post(url, headers=headers, data=events_json, timeout=Splunk._TIMEOUT_SEC)
+            response = requests.post(
+                url,
+                headers=headers,
+                data=events_json,
+                timeout=Splunk._TIMEOUT_SEC,
+                verify=self.config.splunk.hec_ssl_verify)
             if response.status_code != 200:
                 logging.error('Splunk HEC responded with [%s]', response.status_code)
                 return False

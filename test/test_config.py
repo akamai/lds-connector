@@ -37,6 +37,20 @@ class ConfigTest(unittest.TestCase):
             self.assertEqual(config, expected_config)
 
 
+    def test_splunk_no_verify(self):
+        expected_config = test_data.create_splunk_config()
+        expected_config.open = None
+        expected_config.edgedns = None
+        assert expected_config.splunk is not None
+        expected_config.splunk.edgedns_hec = None
+        expected_config.splunk.hec_ssl_verify = False
+
+        config_filename = path.join(test_data.DATA_DIR, 'test_config_splunk_verify.yaml')
+        with open(config_filename, 'r', encoding='utf-8') as config_file:
+            config = read_yaml_config(config_file)
+            self.assertEqual(config, expected_config)
+
+
     def test_splunk_records(self):
         expected_config = test_data.create_splunk_config()
 
@@ -150,7 +164,7 @@ class ConfigTest(unittest.TestCase):
 
         self.assertFalse(is_config_valid(parsed_config))
 
-   
+
     def test_syslog_missing_edns_zone_name(self):
         # edgedns.send_records is true, but syslog.edgedns.zone_name is not set
         parsed_config = test_data.create_syslog_config()

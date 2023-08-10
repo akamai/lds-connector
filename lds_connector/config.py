@@ -37,6 +37,7 @@ class SplunkConfig:
     host: str
     hec_port: int
     hec_use_ssl: bool
+    hec_ssl_verify: bool
     lds_hec: HecConfig
     edgedns_hec: Optional[HecConfig]
 
@@ -134,6 +135,7 @@ _KEY_SPLUNK = 'splunk'
 _KEY_SPLUNK_HOST = 'host'
 _KEY_SPLUNK_HEC_PORT = 'hec_port'
 _KEY_SPLUNK_HEC_SSL = 'hec_use_ssl'
+_KEY_SPLUNK_HEC_SSL_VERIFY = 'hec_ssl_verify'
 _KEY_SPLUNK_HEC_LDS = 'lds_hec'
 _KEY_SPLUNK_HEC_EDGEDNS = 'edgedns_hec'
 _KEY_SPLUNK_HEC_BATCH_SIZE = 'batch_size'
@@ -269,6 +271,7 @@ def read_yaml_config(yaml_stream) -> Optional[Config]:
                 host=splunk_yaml[_KEY_SPLUNK_HOST],
                 hec_port=splunk_yaml[_KEY_SPLUNK_HEC_PORT],
                 hec_use_ssl=splunk_yaml[_KEY_SPLUNK_HEC_SSL],
+                hec_ssl_verify=splunk_yaml.get(_KEY_SPLUNK_HEC_SSL_VERIFY, True),
                 lds_hec=HecConfig(
                     source_type=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_SOURCE_TYPE, None),
                     index=splunk_lds_yaml.get(_KEY_SPLUNK_HEC_INDEX, None),

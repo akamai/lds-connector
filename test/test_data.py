@@ -64,6 +64,7 @@ def create_splunk_config():
             host="127.0.0.1",
             hec_port=8088,
             hec_use_ssl=False,
+            hec_ssl_verify=True,
             lds_hec=HecConfig(
                 source_type='lds_log_dns',
                 index='sandbox',
@@ -97,7 +98,7 @@ def create_splunk_config():
                 cp_code=123456,
                 key="test_key",
                 use_ssl=True,
-                log_dir='logs1'
+                log_dir='cam/logs/'
             ),
             log_download_dir=os.path.abspath('logs2'),
             timestamp_parse='{} - {} {timestamp},{}',

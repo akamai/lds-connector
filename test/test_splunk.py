@@ -94,7 +94,43 @@ class SplunkTest(unittest.TestCase):
             expected_url,
             headers=expected_headers,
             data=expected_event,
-            timeout=Splunk._TIMEOUT_SEC
+            timeout=Splunk._TIMEOUT_SEC,
+            verify=True
+        )
+
+    @patch('lds_connector.splunk.requests')
+    def test_publish_logs_no_verify(self, mock_requests):
+        config = test_data.create_splunk_config()
+        assert config.splunk is not None
+        config.splunk.lds_hec.event_batch_size = 1
+        config.splunk.hec_ssl_verify = False
+
+        splunk = Splunk(config)
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_requests.post.return_value = mock_response
+
+        log_event = test_data.get_dns_log_events()[0]
+
+        splunk.add_log_line(log_event)
+        self.assertTrue(splunk.publish_log_lines())
+
+        expected_url = 'http://127.0.0.1:8088/services/collector/event'
+        expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
+        expected_event = json.dumps({
+            'time': log_event.timestamp.timestamp(),
+            'host': socket.gethostname(),
+            'source': 'lds-connector',
+            'event': log_event.log_line,
+            'sourcetype': config.splunk.lds_hec.source_type,
+            'index': config.splunk.lds_hec.index
+        })
+        mock_requests.post.assert_called_with(
+            expected_url,
+            headers=expected_headers,
+            data=expected_event,
+            timeout=Splunk._TIMEOUT_SEC,
+            verify=False
         )
 
     def test_publish_records(self):
