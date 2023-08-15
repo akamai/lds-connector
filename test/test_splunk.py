@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, patch
 from os import path
 import socket
 import json
-from typing import Any
+from typing import Any, Dict
 
 from test import test_data
 
@@ -41,16 +41,18 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock(return_value=True)
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+
+        splunk.add_log_line(log_event)
         self.assertTrue(splunk.publish_log_lines())
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = json.dumps({
-            'time': test_data.DNS_LOG_TIMESTAMPS[0],
+            'time': log_event.timestamp.timestamp(),
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': test_data.DNS_LOG_LINES[0],
+            'event': log_event.log_line,
             'sourcetype': config.splunk.lds_hec.source_type,
             'index': config.splunk.lds_hec.index
         })
@@ -73,16 +75,18 @@ class SplunkTest(unittest.TestCase):
         mock_bad_response.status_code = 404
         mock_requests.post.side_effect = itertools.chain([ConnectionError(), mock_bad_response], itertools.repeat(mock_response))
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+
+        splunk.add_log_line(log_event)
         self.assertTrue(splunk.publish_log_lines())
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = json.dumps({
-            'time': test_data.DNS_LOG_TIMESTAMPS[0],
+            'time': log_event.timestamp.timestamp(),
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': test_data.DNS_LOG_LINES[0],
+            'event': log_event.log_line,
             'sourcetype': config.splunk.lds_hec.source_type,
             'index': config.splunk.lds_hec.index
         })
@@ -90,7 +94,43 @@ class SplunkTest(unittest.TestCase):
             expected_url,
             headers=expected_headers,
             data=expected_event,
-            timeout=Splunk._TIMEOUT_SEC
+            timeout=Splunk._TIMEOUT_SEC,
+            verify=True
+        )
+
+    @patch('lds_connector.splunk.requests')
+    def test_publish_logs_no_verify(self, mock_requests):
+        config = test_data.create_splunk_config()
+        assert config.splunk is not None
+        config.splunk.lds_hec.event_batch_size = 1
+        config.splunk.hec_ssl_verify = False
+
+        splunk = Splunk(config)
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_requests.post.return_value = mock_response
+
+        log_event = test_data.get_dns_log_events()[0]
+
+        splunk.add_log_line(log_event)
+        self.assertTrue(splunk.publish_log_lines())
+
+        expected_url = 'http://127.0.0.1:8088/services/collector/event'
+        expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
+        expected_event = json.dumps({
+            'time': log_event.timestamp.timestamp(),
+            'host': socket.gethostname(),
+            'source': 'lds-connector',
+            'event': log_event.log_line,
+            'sourcetype': config.splunk.lds_hec.source_type,
+            'index': config.splunk.lds_hec.index
+        })
+        mock_requests.post.assert_called_with(
+            expected_url,
+            headers=expected_headers,
+            data=expected_event,
+            timeout=Splunk._TIMEOUT_SEC,
+            verify=False
         )
 
     def test_publish_records(self):
@@ -128,16 +168,18 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock(return_value=True)
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+
+        splunk.add_log_line(log_event)
         self.assertTrue(splunk.publish_log_lines())
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = json.dumps({
-            'time': test_data.DNS_LOG_TIMESTAMPS[0],
+            'time': log_event.timestamp.timestamp(),
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': test_data.DNS_LOG_LINES[0],
+            'event': log_event.log_line
         })
         splunk._post.assert_called_once_with(
             url=expected_url,
@@ -205,10 +247,12 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock(return_value=True)
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event1 = test_data.get_dns_log_events()[0]
+        splunk.add_log_line(log_event1)
         self.assertFalse(splunk.publish_log_lines())
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[1])
+        log_event2 = test_data.get_dns_log_events()[1]
+        splunk.add_log_line(log_event2)
         self.assertFalse(splunk.publish_log_lines())
 
         splunk._post.assert_not_called()
@@ -240,22 +284,23 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock(return_value=True)
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+        splunk.add_log_line(log_event)
         self.assertFalse(splunk.publish_log_lines())
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        splunk.add_log_line(log_event)
         self.assertFalse(splunk.publish_log_lines())
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        splunk.add_log_line(log_event)
         self.assertTrue(splunk.publish_log_lines())
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = {
-            'time': test_data.DNS_LOG_TIMESTAMPS[0],
+            'time': log_event.timestamp.timestamp(),
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': test_data.DNS_LOG_LINES[0],
+            'event': log_event.log_line,
             'sourcetype': config.splunk.lds_hec.source_type,
             'index': config.splunk.lds_hec.index
         }
@@ -311,19 +356,20 @@ class SplunkTest(unittest.TestCase):
         splunk = Splunk(config)
         splunk._post = MagicMock(return_value=True)
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        log_event = test_data.get_dns_log_events()[0]
+        splunk.add_log_line(log_event)
         self.assertFalse(splunk.publish_log_lines())
 
-        splunk.add_log_line(test_data.DNS_LOG_EVENTS[0])
+        splunk.add_log_line(log_event)
         self.assertTrue(splunk.publish_log_lines(force=True))
 
         expected_url = 'http://127.0.0.1:8088/services/collector/event'
         expected_headers = {'Authorization': "Splunk test_lds_hec_token"}
         expected_event = {
-            'time': test_data.DNS_LOG_TIMESTAMPS[0],
+            'time': log_event.timestamp.timestamp(),
             'host': socket.gethostname(),
             'source': 'lds-connector',
-            'event': test_data.DNS_LOG_LINES[0],
+            'event': log_event.log_line,
             'sourcetype': config.splunk.lds_hec.source_type,
             'index': config.splunk.lds_hec.index
         }
@@ -367,7 +413,7 @@ class SplunkTest(unittest.TestCase):
         )
 
     @staticmethod
-    def create_expected_record_event(config: Config, event, optionals=True) -> dict[str, Any]:
+    def create_expected_record_event(config: Config, event, optionals=True) -> Dict[str, Any]:
         assert config.splunk is not None
         assert config.splunk.edgedns_hec is not None
         event = {

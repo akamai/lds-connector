@@ -5,8 +5,12 @@
 syslog :
   host : '192.168.0.1'
   port: 514
-  use_tcp : false
+  transport : 'TCP_TLS'
+  protocol : 'RFC5424'
   lds_app_name : 'test_lds_app_name'
+  tls :
+    ca_file : 'ca.pem'
+    verify : true
 
 lds :
   ns : 
