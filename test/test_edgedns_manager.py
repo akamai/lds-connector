@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import unittest
-from test import test_data
+from test import test_data, test_util
 from unittest.mock import MagicMock
 import json
 
@@ -41,7 +41,7 @@ class EdgeDnsManagerTest(unittest.TestCase):
         edgedns_manager = EdgeDnsManager(config)
 
         edgedns_manager.open_session.get = MagicMock(
-            return_value = MockResponse(200, test_data.read_json('test_recordset1.json'))
+            return_value = MockResponse(200, test_util.read_json('test_recordset1.json'))
         )
 
         expected_records = [
@@ -62,8 +62,8 @@ class EdgeDnsManagerTest(unittest.TestCase):
 
         edgedns_manager.open_session.get = MagicMock(
             side_effect = [
-                MockResponse(200, test_data.read_json('test_recordset2_page1.json')),
-                MockResponse(200, test_data.read_json('test_recordset2_page2.json'))
+                MockResponse(200, test_util.read_json('test_recordset2_page1.json')),
+                MockResponse(200, test_util.read_json('test_recordset2_page2.json'))
             ]
         )
 
@@ -97,7 +97,7 @@ class EdgeDnsManagerTest(unittest.TestCase):
 
         edgedns_manager.open_session.get = MagicMock(
             side_effect = [
-                MockResponse(200, test_data.read_json('test_recordset2_page1.json')),
+                MockResponse(200, test_util.read_json('test_recordset2_page1.json')),
                 MockResponse(418, None)
             ]
         )
@@ -131,7 +131,7 @@ class EdgeDnsManagerTest(unittest.TestCase):
 
         edgedns_manager.open_session.get = MagicMock(
             side_effect = [
-                MockResponse(200, test_data.read_json('test_recordset2_page1.json')),
+                MockResponse(200, test_util.read_json('test_recordset2_page1.json')),
                 MockResponse(200, {'hello': 'there'})
             ]
         )

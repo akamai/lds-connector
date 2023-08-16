@@ -1,33 +1,17 @@
 ---
 
-# Deliver to Splunk. Send Edge DNS records
+# Deliver to Splunk. No Edge DNS records
 
 splunk :
   host : '127.0.0.1'
   hec_port : 8088
   hec_use_ssl : false
+  hec_ssl_verify : false
   lds_hec :
     source_type: 'lds_log_dns'
     index: 'sandbox'
     token : 'test_lds_hec_token'
     batch_size : 8
-  edgedns_hec :
-    source_type: 'edgedns_record'
-    index: 'sandbox'
-    token : 'test_edgedns_hec_token'
-    batch_size : 10
-
-edgedns :
-  send_records : true
-  zone_name : 'edgedns.zone'
-  poll_period_sec : 3600
-
-open :
-  client_secret : 'test_client_secret'
-  host : 'test_host'
-  access_token : 'test_access_token'
-  client_token : 'test_client_token'
-  account_switch_key : 'test_account_switch_key'
 
 lds :
   ns : 

@@ -19,7 +19,7 @@ import os
 import shutil
 import unittest
 from os import path
-from test import test_data
+from test import test_data, test_util
 from unittest.mock import MagicMock
 import pickle
 
@@ -41,10 +41,12 @@ class LogManagerTest(unittest.TestCase):
         if path.isdir(test_data.TEMP_DIR):
             shutil.rmtree(test_data.TEMP_DIR)
 
+    @staticmethod
     def set_last_processed(log_manager: LogManager, log_file: LogFile):
         log_file.processed = True
         log_manager.last_log_files_by_zone = {'cam': log_file}
 
+    @staticmethod
     def set_log_file_paths(log_file: LogFile):
         log_file.local_path_txt = \
             os.path.join(test_data.TEMP_DIR, log_file.filename_gz.replace('.gz', '.txt'))
@@ -76,7 +78,7 @@ class LogManagerTest(unittest.TestCase):
         If the NetStorage list API XML response is valid
         Then the log manager parses out the log file metadata for each
         """
-        log_files = LogManager._parse_list_response(test_data.NS_LIST_RESPONSE)
+        log_files = LogManager._parse_list_response('/123456/cam/logs', test_data.NS_LIST_RESPONSE)
 
         self.assertEqual(log_files, [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
@@ -111,7 +113,7 @@ class LogManagerTest(unittest.TestCase):
             last_processed_line=-1
         )
 
-        log_files = LogManager._parse_list_response(list_response_xml)
+        log_files = LogManager._parse_list_response('/123456/cam/logs', list_response_xml)
 
         self.assertEqual(log_files, [file2])
 
@@ -228,7 +230,7 @@ class LogManagerTest(unittest.TestCase):
 
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file = log_manager.get_next_log()
 
@@ -240,7 +242,7 @@ class LogManagerTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(expected_log_file.local_path_txt))
         self.assertFalse(os.path.isfile(expected_log_file.local_path_gz))
 
-    def test_get_next_log_multiple_zones(self): 
+    def test_get_next_log_multiple_zones(self):
         """
         If there are multiple zones with the same timestamp,
         Then the log manager returns the log files chronologically
@@ -253,7 +255,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3(), test_data.get_ns_file5()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file = log_manager.get_next_log()
         expected_log_file = test_data.get_ns_file1()
@@ -272,7 +274,7 @@ class LogManagerTest(unittest.TestCase):
         LogManagerTest.set_log_file_paths(expected_log_file)
         self.assertEqual(log_file, expected_log_file)
         log_file.processed = True
-        
+
         log_file = log_manager.get_next_log()
         expected_log_file = test_data.get_ns_file3()
         LogManagerTest.set_log_file_paths(expected_log_file)
@@ -289,12 +291,12 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
         self.assertIsNotNone(log_manager.get_next_log())
-        
+
         log_manager._list = MagicMock(return_value = [])
         self.assertIsNone(log_manager.get_next_log())
 
@@ -313,7 +315,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file1 = log_manager.get_next_log()
         log_file2 = log_manager.get_next_log()
@@ -330,7 +332,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file2(), test_data.get_ns_file1(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file3 = log_manager.get_next_log()
         assert log_file3 is not None
@@ -363,7 +365,7 @@ class LogManagerTest(unittest.TestCase):
         resume_file = test_data.get_ns_file1()
         resume_file.processed = False
         resume_file.last_processed_line = 2
-        test_data.download_file(resume_file)
+        test_util.download_file(resume_file)
         LogManager._uncompress(resume_file)
         with open(test_data.RESUME_DATA_PATH, 'wb') as file:
             pickle.dump({'cam': resume_file}, file)
@@ -373,7 +375,7 @@ class LogManagerTest(unittest.TestCase):
         log_manager = LogManager(config)
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file = log_manager.get_next_log()
 
@@ -397,7 +399,7 @@ class LogManagerTest(unittest.TestCase):
 
         log_manager._list = MagicMock(return_value = \
             [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
-        log_manager._download = MagicMock(wraps=test_data.download_file)
+        log_manager._download = MagicMock(wraps=test_util.download_file)
 
         log_file = log_manager.get_next_log()
 
@@ -410,6 +412,34 @@ class LogManagerTest(unittest.TestCase):
         self.assertEqual(log_file, expected_log_file)
         self.assertTrue(os.path.isfile(log_file.local_path_txt))
         self.assertFalse(os.path.isfile(log_file.local_path_gz))
+
+    def test_parse_list_response_ignore_outside_files(self):
+        """
+        If the NetStorage list API contains files outside of the requested directory
+        Then the log manager will ignore those files.
+        """
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response_text = """<?xml version="1.0" encoding="ISO-8859-1"?>
+        <list>
+            <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030300-0400-0.gz" size="1234" md5="098f6bcd4621d373cade4e832627b4f6"/>
+            <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="2345" md5="5d41402abc4b2a76b9719d911017c592"/>
+            <file type="file" name="123456/other/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
+            <file type="file" name="123456/cat_wearing_a_silly_hat.png" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
+            <file type="file" name="123456/logs/cam_123456.edns_U.202301030400-0500-0.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
+            <file type="file" name="123456/cam/logs/cam_123456.edns_U.202301030400-0500-1.gz" size="3456" md5="d850f04cdb48312a9be171e214c0b4ee"/>
+        </list>"""
+        mock_response.text = mock_response_text
+
+        config = test_data.create_splunk_config()
+        log_manager = LogManager(config)
+
+        log_manager.netstorage = MagicMock()
+        log_manager.netstorage.list = MagicMock(return_value=(True, mock_response))
+
+        actual_log_files = log_manager._list()
+        self.assertEqual(len(actual_log_files), 3)
+        self.assertEqual(actual_log_files, [test_data.get_ns_file1(), test_data.get_ns_file2(), test_data.get_ns_file3()])
 
 
 if __name__ == '__main__':

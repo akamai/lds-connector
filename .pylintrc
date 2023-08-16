@@ -1,0 +1,9 @@
+[FORMAT]
+max-line-length=120
+disable=
+    C0114, # No module docstring
+    W0718, # Catching too general exception
+    C0116, # No function or method doc string
+    C0115, # No class doc string
+    R0902, # Too many instance attributes
+    R0912, # Too many branches

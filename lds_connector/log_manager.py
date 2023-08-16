@@ -23,7 +23,7 @@ import shutil
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from gzip import GzipFile
-from typing import Optional
+from typing import Optional, List
 
 import parse
 from akamai.netstorage import Netstorage
@@ -53,9 +53,9 @@ class LogManager:
             ssl=self.config.lds.ns.use_ssl
         )
 
-        self.asc_log_files_cache: list[LogFile] = []
+        self.asc_log_files_cache: List[LogFile] = []
 
-        self.resume_data_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_DATA_PICKLE_FILE_NAME) 
+        self.resume_data_path = os.path.join(config.lds.log_download_dir, LogManager._RESUME_DATA_PICKLE_FILE_NAME)
 
         if os.path.isfile(self.resume_data_path):
             with open(self.resume_data_path, 'rb') as file:
@@ -69,7 +69,7 @@ class LogManager:
         Returns: None
         """
         assert self.current_log_file is not None
-        
+
         self.last_log_files_by_zone[self.current_log_file.name_props.customer_id] = self.current_log_file
 
         logging.debug('Saving resume data: %s', self.current_log_file)
@@ -90,15 +90,13 @@ class LogManager:
         Returns:
             Optional[LogFile]: The log file to process next, if any.
         """
-        logging.info('Getting next log file')
-
         if self.current_log_file is not None:
             # Normal run
             self.update_last_log_files()
 
         next_log_file = self._determine_next_log()
         if not next_log_file:
-            logging.info('No log files to process')
+            logging.info('No new log files found')
             return None
 
         self._download(next_log_file)
@@ -162,7 +160,7 @@ class LogManager:
         return next_log_file
 
 
-    def _list(self) -> list[LogFile]:
+    def _list(self) -> List[LogFile]:
         """
         List available log file in NetStorage.
 
@@ -180,7 +178,8 @@ class LogManager:
         if response is None or response.status_code != 200:
             logging.error('Failed listing NetStorage files. %s', response.reason if response is not None else "")
             return []
-        logs = LogManager._parse_list_response(response.text)
+        logs: List[LogFile] = LogManager._parse_list_response(ls_path, response.text)
+
         logging.debug('Fetched available log files list from NetStorage')
         return logs
 
@@ -227,18 +226,25 @@ class LogManager:
 
     @staticmethod
     def _delete_gzip(log_file: LogFile) -> None:
+        """
+        Delete the GZIP file for the log file
+
+        Parameters:
+            log_file (LogFile): The log file for which to delete the GZIP file of.
+        """
         os.remove(log_file.local_path_gz)
 
     @staticmethod
-    def _parse_list_response(response_xml: str) -> list[LogFile]:
+    def _parse_list_response(ls_path: str, response_xml: str) -> List[LogFile]:
         """
         Parse the NetStorage list API's XML response into a list of files 
 
         Parameters:
+            ls_path (str): The NetStorage directory the log files are in
             response_xml (str): The NetStorage list API's XML response
 
         Returns:
-            list[LogFile]: The available log files
+            List[LogFile]: The available log files
         """
 
         root = ET.fromstring(response_xml)
@@ -255,6 +261,11 @@ class LogManager:
 
             try:
                 file_path = '/' + child.attrib['name']
+
+                if not file_path.startswith(ls_path):
+                    logging.debug('NetStorage returned log file outside requested directory: %s', file_path)
+                    continue
+
                 filename = file_path[file_path.rfind('/') + 1:] # TODO: This isn't robust to slashes in the file name
                 name_props = LogManager._parse_log_name(filename)
 
@@ -311,7 +322,7 @@ class LogManager:
             part=parse_result['part'],
             encoding=parse_result['encoding']
         )
-    
+
     @staticmethod
     def _ensure_dir_exists(path: str):
         if not os.path.isdir(path):

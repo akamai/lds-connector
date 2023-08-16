@@ -19,7 +19,7 @@ import sched
 import time
 
 from lds_connector.config import read_yaml_config, Config
-from lds_connector.connector import Connector
+from lds_connector.connector import Connector, build_connector
 
 
 def main():
@@ -47,7 +47,7 @@ def main():
     if not config:
         sys.exit(1)
 
-    connector = Connector(config)
+    connector = build_connector(config)
     scheduler = sched.scheduler(time.time, time.sleep)
     if config.edgedns is not None and config.edgedns.send_records:
         scheduler.enter(delay=0,  priority=2, action=sched_process_dns_records, argument=(scheduler, connector, config))

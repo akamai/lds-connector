@@ -4,9 +4,8 @@
 syslog :
   host : '127.0.0.1'
   port: 513
-  use_tcp : true
+  transport: 'UDP'
   lds_app_name : 'lds_dns_log'
-  edgedns_app_name : 'lds_dns_record'
 
 lds :
   ns : 
