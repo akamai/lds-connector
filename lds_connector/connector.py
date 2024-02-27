@@ -177,7 +177,6 @@ class Connector:
         timestamp_datetime = timestamp_datetime.replace(tzinfo=timezone.utc)
         return timestamp_datetime
 
-@staticmethod
 def build_connector(config: Config) -> Connector:
     event_handler = None
     if config.splunk is not None:
